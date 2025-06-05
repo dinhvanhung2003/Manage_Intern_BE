@@ -18,17 +18,74 @@ export class AuthService {
     return this.userRepo.save(user);
   }
 
-  async login(email: string, password: string) {
-    const user = await this.userRepo.findOneBy({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return {
-      accessToken: this.jwtService.sign(payload),
-    };
+ async login(email: string, password: string) {
+  const user = await this.userRepo.findOneBy({ email });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    throw new UnauthorizedException('Invalid credentials');
   }
+
+  const payload = { sub: user.id, email: user.email, role: user.role };
+
+  const accessToken = this.jwtService.sign(
+  { sub: user.id, email: user.email, role: user.role, type: 'access' },
+  {
+    expiresIn: '10s',
+    secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
+  },
+);
+
+const refreshToken = this.jwtService.sign(
+  { sub: user.id, email: user.email, role: user.role, type: 'refresh' },
+  {
+    expiresIn: '7d',
+    secret: process.env.JWT_REFRESH_SECRET || 'refreshSecret',
+  },
+);
+
+
+console.log('ACCESS:', process.env.JWT_ACCESS_SECRET);
+console.log('REFRESH:', process.env.JWT_REFRESH_SECRET);
+  await this.userRepo.update(user.id, {
+    refreshToken: await bcrypt.hash(refreshToken, 10),
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}
+async refreshTokens(userId: number, refreshToken: string) {
+  const user = await this.userRepo.findOneBy({ id: userId });
+  if (!user || !user.refreshToken) {
+    throw new UnauthorizedException('Invalid refresh token');
+  }
+
+  const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+  if (!isMatch) {
+    throw new UnauthorizedException('Refresh token mismatch');
+  }
+
+  const payload = { sub: user.id, email: user.email, role: user.role };
+
+  const newAccessToken = this.jwtService.sign(payload, {
+  expiresIn: '15m',
+  secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
+});
+  const newRefreshToken = this.jwtService.sign(payload, {
+    secret: process.env.JWT_REFRESH_SECRET || 'refreshSecret',
+    expiresIn: '7d',
+  });
+
+  await this.userRepo.update(user.id, {
+    refreshToken: await bcrypt.hash(newRefreshToken, 10),
+  });
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
+}
+
 
   async getProfile(userId: number) {
     return this.userRepo.findOneBy({ id: userId });

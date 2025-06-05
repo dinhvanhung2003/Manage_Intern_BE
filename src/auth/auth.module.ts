@@ -4,13 +4,15 @@ import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }), 
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: 'your_jwt_secret',         
-      signOptions: { expiresIn: '1d' },
+      secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   controllers: [AuthController],
