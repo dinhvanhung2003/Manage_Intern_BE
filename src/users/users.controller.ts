@@ -19,15 +19,20 @@ import { UserRole } from '../auth/user.entity'
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+// @Roles(UserRole.ADMIN)
+// @Roles(UserRole.MENTOR)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
+  constructor(private readonly usersService: UsersService) { }
+  
   @Get()
   getAllUsers(): Promise<User[]> {
     return this.usersService.findAll();
   }
-
+ @Get('/interns')
+  @Roles(UserRole.ADMIN, UserRole.MENTOR) // chỉ mentor mới gọi được
+  getInterns(): Promise<User[]> {
+    return this.usersService.findByRole(UserRole.INTERN);
+  }
   @Get(':id')
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
     return this.usersService.findOne(id);
@@ -47,4 +52,5 @@ export class UsersController {
   deleteUser(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.usersService.delete(id);
   }
+ 
 }

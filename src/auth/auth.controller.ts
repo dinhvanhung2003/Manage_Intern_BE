@@ -4,28 +4,61 @@ import { AuthService } from './auth.service';
 import { UserRole } from './user.entity';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Request } from 'express';
+import { UnauthorizedException } from '@nestjs/common';
+import { Res } from '@nestjs/common';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('register')
   register(@Body() body: { email: string; password: string; role: UserRole }) {
     return this.authService.register(body.email, body.password, body.role);
   }
 
+
+
   @Post('login')
-  login(@Body() body: { email: string; password: string }) {
-    return this.authService.login(body.email, body.password);
+  async login(
+    @Body() body: { email: string; password: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken } = await this.authService.login(
+      body.email,
+      body.password,
+    );
+
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { accessToken };
   }
+
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Req() req: Request) {
-    return this.authService.getProfile(req['user'].sub);
+    const user = req.user as { sub: number };
+    return this.authService.getProfile(user.sub);
+
   }
   @Post('refresh')
-  async refresh(@Body() body: { userId: number; refreshToken: string }) {
-    return this.authService.refreshTokens(body.userId, body.refreshToken);
+  async refresh(@Req() req: Request) {
+    console.log('Cookies:', req.cookies); 
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token found');
+    }
+
+    const userId = this.authService.extractUserIdFromToken(refreshToken);
+    const { accessToken } = await this.authService.refreshTokens(userId, refreshToken);
+    return { accessToken };
   }
+
 }

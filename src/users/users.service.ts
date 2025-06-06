@@ -12,6 +12,7 @@ export class UsersService {
   ) {}
 
   findAll(): Promise<User[]> {
+    
     return this.userRepo.find({ select: ['id', 'email', 'role', 'bio'] });
   }
 
@@ -41,4 +42,7 @@ export class UsersService {
   async delete(id: number): Promise<void> {
     await this.userRepo.delete(id);
   }
+  async findByRole(role: UserRole): Promise<User[]> {
+  return this.userRepo.find({ where: { role } });
+}
 }
