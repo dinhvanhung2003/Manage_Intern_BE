@@ -13,7 +13,7 @@ export class UsersService {
 
   findAll(): Promise<User[]> {
     
-    return this.userRepo.find({ select: ['id', 'email', 'role', 'bio'] });
+    return this.userRepo.find({ select: ['id', 'email', 'role', 'bio','name'] });
   }
 
  async findOne(id: number): Promise<User> {
