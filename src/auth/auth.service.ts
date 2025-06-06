@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
-
+import { ConflictException, InternalServerErrorException } from '@nestjs/common';
 @Injectable()
 export class AuthService {
   constructor(
@@ -12,11 +12,24 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) { }
 
-  async register(email: string, password: string, role: UserRole) {
+  async register(email: string, password: string) {
     const hashed = await bcrypt.hash(password, 10);
-    const user = this.userRepo.create({ email, password: hashed, role });
-    return this.userRepo.save(user);
+    const user = this.userRepo.create({
+      email,
+      password: hashed,
+      role: UserRole.INTERN,
+    });
+
+    try {
+      return await this.userRepo.save(user);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new ConflictException('Email đã được sử dụng');
+      }
+      throw new InternalServerErrorException('Đăng ký thất bại');
+    }
   }
+
 
   async login(email: string, password: string) {
     const user = await this.userRepo.findOneBy({ email });
@@ -54,7 +67,7 @@ export class AuthService {
       refreshToken,
     };
   }
-  
+
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user || !user.refreshToken) {
@@ -92,5 +105,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
+
+
+
+  async checkEmailExists(email: string): Promise<boolean> {
+    const user = await this.userRepo.findOne({ where: { email } });
+    return !!user;
+  }
+
+
+
+
 }
 

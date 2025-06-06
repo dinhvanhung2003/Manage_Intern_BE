@@ -7,14 +7,14 @@ import { Request } from 'express';
 import { UnauthorizedException } from '@nestjs/common';
 import { Res } from '@nestjs/common';
 import { Response } from 'express';
-
+import { Query } from '@nestjs/common';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
 
   @Post('register')
-  register(@Body() body: { email: string; password: string; role: UserRole }) {
-    return this.authService.register(body.email, body.password, body.role);
+  register(@Body() body: { email: string; password: string }) {
+    return this.authService.register(body.email, body.password);
   }
 
 
@@ -60,5 +60,9 @@ export class AuthController {
     const { accessToken } = await this.authService.refreshTokens(userId, refreshToken);
     return { accessToken };
   }
-
+ @Get('check-email')
+  async checkEmail(@Query('email') email: string) {
+    const exists = await this.authService.checkEmailExists(email);
+    return { exists }; // trả về { exists: true } hoặc { exists: false }
+  }
 }
