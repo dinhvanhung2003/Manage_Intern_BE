@@ -3,26 +3,66 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from './user.entity';
+import { User, UserRole } from '../users/user.entity';
 import { ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Mentor } from '../users/user.mentor';
+import { Intern } from '../users/user.intern';
+import { Admin } from '../users/user.admin';
+
+
+
+
+
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     @InjectRepository(User) private userRepo: Repository<User>,
+
+    @InjectRepository(Admin)
+    private adminRepo: Repository<Admin>,
+
+    @InjectRepository(Mentor)
+    private mentorRepo: Repository<Mentor>,
+
+    @InjectRepository(Intern)
+    private internRepo: Repository<Intern>,
   ) { }
 
-  async register(email: string, password: string,role: UserRole = UserRole.INTERN) {
+
+
+  async register(email: string, password: string, type: string = 'intern') {
     const hashed = await bcrypt.hash(password, 10);
-    const user = this.userRepo.create({
-      email,
-      password: hashed,
-      role,
-    });
+
+    let user: User;
+
+  
+    switch (type) {
+      case 'admin':
+        user = new Admin();
+        break;
+      case 'mentor':
+        user = new Mentor();
+        break;
+      default:
+        user = new Intern();
+    }
+
+    user.email = email;
+    user.password = hashed;
 
     try {
-      return await this.userRepo.save(user);
+
+      switch (type) {
+        case 'admin':
+          return await this.adminRepo.save(user as Admin);
+        case 'mentor':
+          return await this.mentorRepo.save(user as Mentor);
+        default:
+          return await this.internRepo.save(user as Intern);
+      }
     } catch (error: any) {
+      console.error('Đăng ký lỗi:', error);
       if (error.code === '23505') {
         throw new ConflictException('Email đã được sử dụng');
       }
@@ -31,16 +71,24 @@ export class AuthService {
   }
 
 
+
+
   async login(email: string, password: string) {
-    const user = await this.userRepo.findOneBy({ email });
+    const user = await this.userRepo.findOne({
+      where: { email },
+    })
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      type: user.constructor.name.toLowerCase(),
+    };
 
     const accessToken = this.jwtService.sign(
-      { sub: user.id, email: user.email, role: user.role, type: 'access' },
+      { sub: user.id, email: user.email, type: (user as any).type || user.constructor.name.toLowerCase(), tokenType: 'access', },
       {
         expiresIn: '30s',
         secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
@@ -48,7 +96,10 @@ export class AuthService {
     );
 
     const refreshToken = this.jwtService.sign(
-      { sub: user.id, email: user.email, role: user.role, type: 'refresh' },
+      {
+        sub: user.id, email: user.email, type: (user as any).type || user.constructor.name.toLowerCase(),
+        tokenType: 'refresh',
+      },
       {
         expiresIn: '7d',
         secret: process.env.JWT_REFRESH_SECRET || 'refreshSecret',
@@ -79,7 +130,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token mismatch');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, type: user.constructor.name.toLowerCase(), };
 
     const newAccessToken = this.jwtService.sign(payload, {
       expiresIn: '30s',

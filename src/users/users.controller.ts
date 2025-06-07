@@ -11,11 +11,11 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { User } from '../auth/user.entity'
+import { User } from './user.entity'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard'
 import { Roles } from '../auth/roles.decorator'
-import { UserRole } from '../auth/user.entity'
+import { UserRole } from './user.entity'
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,9 +29,9 @@ export class UsersController {
     return this.usersService.findAll();
   }
  @Get('/interns')
-  @Roles(UserRole.ADMIN, UserRole.MENTOR) // chỉ mentor mới gọi được
+  @Roles("mentor","admin") 
   getInterns(): Promise<User[]> {
-    return this.usersService.findByRole(UserRole.INTERN);
+    return this.usersService.findByType(UserRole.INTERN);
   }
   @Get(':id')
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {

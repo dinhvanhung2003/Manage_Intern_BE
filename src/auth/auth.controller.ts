@@ -1,22 +1,22 @@
 // auth/auth.controller.ts
 import { Body, Controller, Post, Req, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UserRole } from './user.entity';
+import { UserRole } from '../users/user.entity';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Request } from 'express';
 import { UnauthorizedException } from '@nestjs/common';
 import { Res } from '@nestjs/common';
 import { Response } from 'express';
 import { Query } from '@nestjs/common';
+import { CreateUserDto } from './dto/RegisterDTO'; // Assuming you have a DTO for user creation
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
 
-  @Post('register')
-  register(@Body() body: { email: string; password: string,role?: UserRole }) {
-    return this.authService.register(body.email, body.password,body.role);
-  }
-
+ @Post('register')
+register(@Body() body: CreateUserDto) {
+  return this.authService.register(body.email, body.password, body.type);
+}
 
 
   @Post('login')

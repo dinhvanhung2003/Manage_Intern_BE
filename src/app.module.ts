@@ -3,9 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { User } from './auth/user.entity';
+import { User } from './users/user.entity';
 import { UsersModule } from './users/users.module';
-
+import { InternsModule } from './interns/interns.module';
+import { MentorsModule } from './mentors/mentors.module';
+import { AdminModule } from './admin/admin.module';
+import { Mentor } from './users/user.mentor';
+import { Admin } from './users/user.admin';
+import { Intern } from './users/user.intern';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -15,11 +20,14 @@ import { UsersModule } from './users/users.module';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User],
+      entities: [User,Mentor,Admin,Intern],
       synchronize: true,       
     }),
     AuthModule,
     UsersModule,
+    InternsModule,
+    MentorsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

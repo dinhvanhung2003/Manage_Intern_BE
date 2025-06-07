@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from '../auth/user.entity';
+import { User, UserRole } from './user.entity';
 import { NotFoundException } from '@nestjs/common';
 @Injectable()
 export class UsersService {
@@ -13,7 +13,7 @@ export class UsersService {
 
   findAll(): Promise<User[]> {
     
-    return this.userRepo.find({ select: ['id', 'email', 'role', 'bio','name'] });
+    return this.userRepo.find({ select: ['id', 'email',  'bio','name'] });
   }
 
  async findOne(id: number): Promise<User> {
@@ -42,7 +42,10 @@ export class UsersService {
   async delete(id: number): Promise<void> {
     await this.userRepo.delete(id);
   }
-  async findByRole(role: UserRole): Promise<User[]> {
-  return this.userRepo.find({ where: { role } });
+  async findByType(type: string): Promise<User[]> {
+  return this.userRepo
+    .createQueryBuilder('user')
+    .where('"user"."type" = :type', { type })
+    .getMany();
 }
 }
