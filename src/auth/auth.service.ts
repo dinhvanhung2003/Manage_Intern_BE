@@ -12,12 +12,12 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) { }
 
-  async register(email: string, password: string) {
+  async register(email: string, password: string,role: UserRole = UserRole.INTERN) {
     const hashed = await bcrypt.hash(password, 10);
     const user = this.userRepo.create({
       email,
       password: hashed,
-      role: UserRole.INTERN,
+      role,
     });
 
     try {

@@ -13,8 +13,8 @@ export class AuthController {
   constructor(private authService: AuthService) { }
 
   @Post('register')
-  register(@Body() body: { email: string; password: string }) {
-    return this.authService.register(body.email, body.password);
+  register(@Body() body: { email: string; password: string,role?: UserRole }) {
+    return this.authService.register(body.email, body.password,body.role);
   }
 
 
