@@ -11,7 +11,8 @@ import { AdminModule } from './admin/admin.module';
 import { Mentor } from './users/user.mentor';
 import { Admin } from './users/user.admin';
 import { Intern } from './users/user.intern';
-
+import { InternAssignment } from './admin/entities/user.assign';
+import { Task } from './mentors/entities/task.entity'; 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -21,7 +22,7 @@ import { Intern } from './users/user.intern';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User,Mentor,Admin,Intern],
+      entities: [User,Mentor,Admin,Intern,InternAssignment,Task],
       synchronize: true,       
     }),
     AuthModule,

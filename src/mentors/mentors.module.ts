@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
-import { MentorsController } from './mentors.controller';
-import { MentorsService } from './mentors.service';
-
+import { MentorController } from './mentors.controller';
+import { MentorService } from './mentors.service';
+import {InternAssignment} from '../admin/entities/user.assign';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Task } from '../mentors/entities/task.entity'; 
+import { User } from '../users/user.entity';
 @Module({
-  controllers: [MentorsController],
-  providers: [MentorsService]
+  imports: [
+    TypeOrmModule.forFeature([InternAssignment,Task,User]), 
+  ],
+  controllers: [MentorController],
+  providers: [MentorService]
 })
 export class MentorsModule {}

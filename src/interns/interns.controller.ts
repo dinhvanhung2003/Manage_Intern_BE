@@ -6,12 +6,17 @@ import { UpdateInternDto } from './dto/UpdateInternDTO';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
+import { Param, Patch } from '@nestjs/common';
+import { TaskStatus } from '../mentors/entities/task.entity';
+import { Task } from '../mentors/entities/task.entity';
 @Controller('interns')
 @UseGuards(JwtAuthGuard)
 export class InternsController {
-  constructor(private readonly internsService: InternsService,
-     private readonly http: HttpService,
-  ) {}
+  constructor(
+    private readonly internsService: InternsService,
+
+    private readonly http: HttpService,
+  ) { }
 
   @Get('profile')
   async getProfile(@Req() req: Request) {
@@ -25,25 +30,43 @@ export class InternsController {
     return this.internsService.updateProfile(user.sub, body);
   }
   @Get('vietnam')
-async getVietnamUniversities() {
-  const url =
-    'https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json';
+  async getVietnamUniversities() {
+    const url =
+      'https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json';
 
-  const response: AxiosResponse<any[]> = await firstValueFrom(
-    this.http.get<any[]>(url),
-  );
+    const response: AxiosResponse<any[]> = await firstValueFrom(
+      this.http.get<any[]>(url),
+    );
 
-  const vietnamUnis = response.data.filter(
-    (u) => u.country?.toLowerCase().includes('vietnam'),
-  );
+    const vietnamUnis = response.data.filter(
+      (u) => u.country?.toLowerCase().includes('vietnam'),
+    );
 
-  console.log('Vietnam universities:', vietnamUnis.length);
+    console.log('Vietnam universities:', vietnamUnis.length);
 
-  return vietnamUnis.map((u) => ({
-    name: u.name,
-    website: u.web_pages?.[0] || '',
-    domain: u.domains?.[0] || '',
-  }));
-}
+    return vietnamUnis.map((u) => ({
+      name: u.name,
+      website: u.web_pages?.[0] || '',
+      domain: u.domains?.[0] || '',
+    }));
+  }
+  @Get('tasks')
+  async getMyTasks(@Req() req: Request) {
+    const internId = (req.user as any).sub;
+    return this.internsService.findTasksByIntern(internId);
+  }
+  @Patch('tasks/:id/accept')
+  @UseGuards(JwtAuthGuard)
+  async acceptTask(@Param('id') id: number, @Req() req: Request) {
+    const internId = (req.user as any).sub;
+    return this.internsService.updateStatus(id, internId, TaskStatus.IN_PROGRESS);
+  }
+
+
+  @Get('assignment')
+  async getAssignment(@Req() req: Request) {
+    const internId = (req.user as any).sub;
+    return this.internsService.getAssignment(internId);
+  }
 
 }

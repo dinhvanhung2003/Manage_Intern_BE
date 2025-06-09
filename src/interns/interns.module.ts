@@ -4,8 +4,10 @@ import { InternsService } from './interns.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Intern } from '../users/user.intern';
 import { HttpModule } from '@nestjs/axios';
+import {Task} from '../mentors/entities/task.entity'; 
+import {InternAssignment} from '../admin/entities/user.assign';
 @Module({
-   imports: [TypeOrmModule.forFeature([Intern]),HttpModule], 
+   imports: [TypeOrmModule.forFeature([Intern,Task,InternAssignment]),HttpModule], 
   controllers: [InternsController],
   providers: [InternsService]
 })
