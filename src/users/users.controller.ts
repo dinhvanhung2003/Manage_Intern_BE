@@ -16,13 +16,18 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard'
 import { Roles } from '../auth/roles.decorator'
 import { UserRole } from './user.entity'
-
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { AxiosResponse } from 'axios';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 // @Roles(UserRole.ADMIN)
 // @Roles(UserRole.MENTOR)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(
+  private readonly usersService: UsersService,
+  private readonly http: HttpService, 
+) {}
   
   @Get()
   getAllUsers(): Promise<User[]> {
@@ -52,5 +57,8 @@ export class UsersController {
   deleteUser(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.usersService.delete(id);
   }
- 
+
+
+
+
 }

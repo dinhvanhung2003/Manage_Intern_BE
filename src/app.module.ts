@@ -11,6 +11,7 @@ import { AdminModule } from './admin/admin.module';
 import { Mentor } from './users/user.mentor';
 import { Admin } from './users/user.admin';
 import { Intern } from './users/user.intern';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({

@@ -8,7 +8,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { Res } from '@nestjs/common';
 import { Response } from 'express';
 import { Query } from '@nestjs/common';
-import { CreateUserDto } from './dto/RegisterDTO'; // Assuming you have a DTO for user creation
+import { CreateUserDto } from './dto/RegisterDTO';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }

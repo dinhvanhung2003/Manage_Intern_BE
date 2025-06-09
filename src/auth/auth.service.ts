@@ -90,7 +90,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { sub: user.id, email: user.email, type: (user as any).type || user.constructor.name.toLowerCase(), tokenType: 'access', },
       {
-        expiresIn: '30s',
+        expiresIn: '10m',
         secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
       },
     );
@@ -133,7 +133,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email, type: user.constructor.name.toLowerCase(), };
 
     const newAccessToken = this.jwtService.sign(payload, {
-      expiresIn: '30s',
+      expiresIn: '10m',
       secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
     });
 
