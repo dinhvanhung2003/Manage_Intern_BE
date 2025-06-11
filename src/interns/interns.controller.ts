@@ -7,8 +7,8 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
 import { Param, Patch } from '@nestjs/common';
-import { TaskStatus } from '../mentors/entities/task.entity';
-import { Task } from '../mentors/entities/task.entity';
+import { TaskStatus } from '../tasks/entities/task.entity';
+import { Task } from '../tasks/entities/task.entity';
 @Controller('interns')
 @UseGuards(JwtAuthGuard)
 export class InternsController {

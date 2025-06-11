@@ -6,12 +6,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
 import { Body, Post, Delete, Param, ParseIntPipe } from '@nestjs/common';
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @Get('users')
-  @Roles('admin') 
+  @Roles('admin')
   getAllUsers() {
     return this.adminService.findAllInternsAndMentors();
   }
@@ -28,5 +28,11 @@ export class AdminController {
   @Delete('assignments/:id')
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.removeAssignment(id);
+  }
+
+  // message queue
+  @Post('assign-random')
+  assignAll() {
+    return this.adminService.enqueueRandomAssignments();
   }
 }

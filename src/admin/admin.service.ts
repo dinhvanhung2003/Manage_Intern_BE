@@ -6,6 +6,7 @@ import { Raw } from 'typeorm';
 import { InternAssignment } from './entities/user.assign';
 import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
+import { assignQueue } from '../queues/user.queue'; 
 @Injectable()
 export class AdminService {
   constructor(
@@ -47,4 +48,23 @@ async findAllInternsAndMentors(): Promise<User[]> {
   removeAssignment(id: number) {
     return this.assignmentRepo.delete(id);
   }
+
+
+  // message queue 
+  async enqueueRandomAssignments() {
+  const interns = await this.userRepo.find({ where: { type: 'intern' } });
+  const mentors = await this.userRepo.find({ where: { type: 'mentor' } });
+
+  for (const intern of interns) {
+    const randomMentor = mentors[Math.floor(Math.random() * mentors.length)];
+
+    await assignQueue.add('assign', {
+      internId: intern.id,
+      mentorId: randomMentor.id,
+    });
+  }
+
+  return { message: ` Đã đẩy ${interns.length} job vào hàng đợi assign-intern` };
+}
+
 }

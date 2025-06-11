@@ -12,7 +12,8 @@ import { Mentor } from './users/user.mentor';
 import { Admin } from './users/user.admin';
 import { Intern } from './users/user.intern';
 import { InternAssignment } from './admin/entities/user.assign';
-import { Task } from './mentors/entities/task.entity'; 
+import { Task } from './tasks/entities/task.entity'; 
+import { TasksModule } from './tasks/tasks.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -30,6 +31,7 @@ import { Task } from './mentors/entities/task.entity';
     InternsModule,
     MentorsModule,
     AdminModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

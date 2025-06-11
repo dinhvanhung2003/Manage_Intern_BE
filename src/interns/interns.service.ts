@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Intern } from '../users/user.intern';
 import { Repository } from 'typeorm';
 import { UpdateInternDto } from './dto/UpdateInternDTO';
-import { TaskStatus } from '../mentors/entities/task.entity';
+import { TaskStatus } from '../tasks/entities/task.entity';
 import { ForbiddenException } from '@nestjs/common/exceptions/forbidden.exception';
-import { Task } from '../mentors/entities/task.entity';
+import { Task } from '../tasks/entities/task.entity';
 import { InternAssignment } from '../admin/entities/user.assign';
 @Injectable()
 export class InternsService {

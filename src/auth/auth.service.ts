@@ -33,10 +33,7 @@ export class AuthService {
 
   async register(email: string, password: string, type: string = 'intern') {
     const hashed = await bcrypt.hash(password, 10);
-
     let user: User;
-
-  
     switch (type) {
       case 'admin':
         user = new Admin();

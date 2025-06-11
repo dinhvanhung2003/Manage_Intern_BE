@@ -11,7 +11,7 @@ import { UserRole } from '../users/user.entity'
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
@@ -20,15 +20,15 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (!requiredRoles || requiredRoles.length === 0) {
-      return true; // Không yêu cầu role cụ thể
+      return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
     if (!user || !requiredRoles.includes(user.type)) {
-  throw new ForbiddenException('Bạn không có quyền truy cập');
-}
+      throw new ForbiddenException('Bạn không có quyền truy cập');
+    }
 
     return true;
   }

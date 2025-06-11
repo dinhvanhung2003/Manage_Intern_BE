@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
 import { NotFoundException } from '@nestjs/common';
+import { userQueue } from '../queues/user.queue'; 
 @Injectable()
 export class UsersService {
   constructor(
@@ -48,4 +49,34 @@ export class UsersService {
     .where('"user"."type" = :type', { type })
     .getMany();
 }
+
+
+
+  //message queue 
+
+ async seedUsers() {
+  for (let i = 0; i < 100; i++) {
+    await userQueue.add('create', {
+      name: `Mentor ${i}`,
+      email: `mentor${i}@mail.com`,
+      type: 'mentor',
+    });
+  }
+
+  for (let i = 0; i < 1000; i++) {
+    const mentorId = Math.floor(Math.random() * 100) + 1;
+    await userQueue.add('create', {
+      name: `Intern ${i}`,
+      email: `intern${i}@mail.com`,
+      type: 'intern',
+      mentorId,
+    });
+  }
+
+  return { message: 'Seeded 100 mentors & 1000 interns to queue' };
+}
+
+
+
+
 }

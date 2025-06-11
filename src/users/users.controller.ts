@@ -20,21 +20,24 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
-// @Roles(UserRole.ADMIN)
-// @Roles(UserRole.MENTOR)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles("admin")
 export class UsersController {
   constructor(
-  private readonly usersService: UsersService,
-  private readonly http: HttpService, 
-) {}
-  
+    private readonly usersService: UsersService,
+    private readonly http: HttpService,
+  ) { }
+ // Message quene
+  @Post('seed-users')
+  seedUsers() {
+    return this.usersService.seedUsers();
+  }
   @Get()
   getAllUsers(): Promise<User[]> {
     return this.usersService.findAll();
   }
- @Get('/interns')
-  @Roles("mentor","admin") 
+  @Get('/interns')
+  @Roles("mentor", "admin")
   getInterns(): Promise<User[]> {
     return this.usersService.findByType(UserRole.INTERN);
   }
@@ -59,6 +62,9 @@ export class UsersController {
   }
 
 
+
+
+ 
 
 
 }
