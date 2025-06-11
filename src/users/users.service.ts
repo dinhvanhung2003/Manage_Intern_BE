@@ -4,26 +4,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
 import { NotFoundException } from '@nestjs/common';
-import { userQueue } from '../queues/user.queue'; 
+import { userQueue } from '../queues/user.queue';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepo: Repository<User>,
-  ) {}
+  ) { }
 
   findAll(): Promise<User[]> {
-    
-    return this.userRepo.find({ select: ['id', 'email',  'bio','name'] });
+
+    return this.userRepo.find({ select: ['id', 'email', 'bio', 'name'] });
   }
 
- async findOne(id: number): Promise<User> {
-  const user = await this.userRepo.findOneBy({ id });
-  if (!user) {
-    throw new NotFoundException(`User with ID ${id} not found`);
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepo.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
   }
-  return user;
-}
 
 
   async create(userData: Partial<User>): Promise<User> {
@@ -32,49 +32,49 @@ export class UsersService {
   }
 
   async update(id: number, userData: Partial<User>): Promise<User> {
-  await this.userRepo.update(id, userData);
-  const updated = await this.findOne(id);
-  if (!updated) {
-    throw new NotFoundException(`User with ID ${id} not found`);
+    await this.userRepo.update(id, userData);
+    const updated = await this.findOne(id);
+    if (!updated) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return updated;
   }
-  return updated;
-}
 
   async delete(id: number): Promise<void> {
     await this.userRepo.delete(id);
   }
   async findByType(type: string): Promise<User[]> {
-  return this.userRepo
-    .createQueryBuilder('user')
-    .where('"user"."type" = :type', { type })
-    .getMany();
-}
+    return this.userRepo
+      .createQueryBuilder('user')
+      .where('"user"."type" = :type', { type })
+      .getMany();
+  }
 
 
 
   //message queue 
 
- async seedUsers() {
-  for (let i = 0; i < 100; i++) {
-    await userQueue.add('create', {
-      name: `Mentor ${i}`,
-      email: `mentor${i}@mail.com`,
-      type: 'mentor',
-    });
-  }
+  async seedUsers() {
+    for (let i = 0; i < 100; i++) {
+      await userQueue.add('create', {
+        name: `Mentor ${i}`,
+        email: `mentor${i}@mail.com`,
+        type: 'mentor',
+      });
+    }
 
-  for (let i = 0; i < 1000; i++) {
-    const mentorId = Math.floor(Math.random() * 100) + 1;
-    await userQueue.add('create', {
-      name: `Intern ${i}`,
-      email: `intern${i}@mail.com`,
-      type: 'intern',
-      mentorId,
-    });
-  }
+    for (let i = 0; i < 1000; i++) {
+      const mentorId = Math.floor(Math.random() * 100) + 1;
+      await userQueue.add('create', {
+        name: `Intern ${i}`,
+        email: `intern${i}@mail.com`,
+        type: 'intern',
+        mentorId,
+      });
+    }
 
-  return { message: 'Seeded 100 mentors & 1000 interns to queue' };
-}
+    return { message: 'Seeded 100 mentors & 1000 interns to queue' };
+  }
 
 
 

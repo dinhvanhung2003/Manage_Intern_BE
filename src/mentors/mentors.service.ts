@@ -10,78 +10,87 @@ import { TaskStatus } from '../tasks/entities/task.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { taskQueue } from '../queues/user.queue';
 import { BulkJobOptions } from 'bullmq';
+import { Not, IsNull } from 'typeorm';
 @Injectable()
 export class MentorService {
-    constructor(
-        @InjectRepository(InternAssignment)
-        private assignmentRepo: Repository<InternAssignment>,
-        @InjectRepository(Task)
-        private readonly taskRepo: Repository<Task>,
+  constructor(
+    @InjectRepository(InternAssignment)
+    private assignmentRepo: Repository<InternAssignment>,
+    @InjectRepository(Task)
+    private readonly taskRepo: Repository<Task>,
 
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
-    ) { }
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+  ) { }
 
-    async getInternsOfMentor(mentorId: number): Promise<User[]> {
-        const assignments = await this.assignmentRepo.find({
-            where: { mentor: { id: mentorId } },
-            relations: ['intern'],
-        });
-        return assignments.map((a) => a.intern);
+  async getInternsOfMentor(mentorId: number): Promise<User[]> {
+    const assignments = await this.assignmentRepo.find({
+      where: { mentor: { id: mentorId } },
+      relations: ['intern'],
+    });
+    return assignments.map((a) => a.intern);
+  }
+  async assignTask(mentorId: number, dto: CreateTaskDto) {
+    const intern = await this.userRepo.findOneBy({ id: dto.assignedTo });
+    if (!intern || intern.type !== 'intern') throw new Error('Người nhận không hợp lệ');
+
+    const task = this.taskRepo.create({
+      ...dto,
+      dueDate: new Date(dto.dueDate),
+      assignedBy: { id: mentorId },
+      assignedTo: intern,
+    });
+
+    return this.taskRepo.save(task);
+  }
+  async getTasksOfIntern(mentorId: number, internId: number) {
+
+    return this.taskRepo.find({
+      where: {
+        assignedTo: { id: internId },
+        assignedBy: { id: mentorId },
+      },
+      order: { dueDate: 'ASC' },
+    });
+  }
+  async markCompleted(taskId: number, mentorId: number) {
+    const task = await this.taskRepo.findOne({
+      where: {
+        id: taskId,
+        assignedBy: { id: mentorId },
+      },
+      relations: ['assignedBy'],
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
     }
-    async assignTask(mentorId: number, dto: CreateTaskDto) {
-        const intern = await this.userRepo.findOneBy({ id: dto.assignedTo });
-        if (!intern || intern.type !== 'intern') throw new Error('Người nhận không hợp lệ');
 
-        const task = this.taskRepo.create({
-            ...dto,
-            dueDate: new Date(dto.dueDate),
-            assignedBy: { id: mentorId },
-            assignedTo: intern,
-        });
-
-        return this.taskRepo.save(task);
-    }
-    async getTasksOfIntern(mentorId: number, internId: number) {
-
-        return this.taskRepo.find({
-            where: {
-                assignedTo: { id: internId },
-                assignedBy: { id: mentorId },
-            },
-            order: { dueDate: 'ASC' },
-        });
-    }
-    async markCompleted(taskId: number, mentorId: number) {
-        const task = await this.taskRepo.findOne({
-            where: {
-                id: taskId,
-                assignedBy: { id: mentorId },
-            },
-            relations: ['assignedBy'],
-        });
-
-        if (!task) {
-            throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
-        }
-
-        task.status = TaskStatus.COMPLETED;
-        return this.taskRepo.save(task);
-    }
-    // message queue
-   async seedTasks() {
-  const interns = await this.userRepo.find({ where: { type: 'intern' } });
-  const mentors = await this.userRepo.find({ where: { type: 'mentor' } });
+    task.status = TaskStatus.COMPLETED;
+    return this.taskRepo.save(task);
+  }
+  // message queue
+ async seedTasks() {
+  const assignments = await this.assignmentRepo.find({
+    relations: ['intern', 'mentor'], // load đủ intern + mentor
+  });
 
   const jobs: { name: string; data: any }[] = [];
 
   for (let i = 0; i < 10000; i++) {
-    const intern = interns[Math.floor(Math.random() * interns.length)];
-    const mentor = mentors[Math.floor(Math.random() * mentors.length)];
+    const assignment = assignments[Math.floor(Math.random() * assignments.length)];
+    const intern = assignment.intern;
+    const mentor = assignment.mentor;
+
+    if (!intern || !mentor) {
+      console.warn(` Bỏ qua assignment vì thiếu intern hoặc mentor`);
+      continue;
+    }
 
     jobs.push({
       name: 'create',
       data: {
+        index: i,
         title: `Task ${i}`,
         description: `Description for task ${i}`,
         assignedTo: intern.id,
@@ -92,9 +101,9 @@ export class MentorService {
   }
 
   await taskQueue.addBulk(jobs);
-
-  return { message: '10.000 tasks pushed to queue (bulk)' };
+  return { message: ` Đã đẩy ${jobs.length} task vào queue từ bảng intern_assignments` };
 }
+
 
 
 }
