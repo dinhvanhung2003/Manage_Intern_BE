@@ -14,6 +14,8 @@ import { Intern } from './users/user.intern';
 import { InternAssignment } from './admin/entities/user.assign';
 import { Task } from './tasks/entities/task.entity'; 
 import { TasksModule } from './tasks/tasks.module';
+import { MessageModule } from './message/message.module';
+import { Message } from './message/entities/message.entity'; 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -23,7 +25,7 @@ import { TasksModule } from './tasks/tasks.module';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User,Mentor,Admin,Intern,InternAssignment,Task],
+      entities: [User,Mentor,Admin,Intern,InternAssignment,Task,Message],
       synchronize: true,       
     }),
     AuthModule,
@@ -32,6 +34,7 @@ import { TasksModule } from './tasks/tasks.module';
     MentorsModule,
     AdminModule,
     TasksModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,OneToMany } from 'typeorm';
 import { User } from '../../users/user.entity';
-
+import { Message } from '../../message/entities/message.entity';
 @Entity('intern_assignments')
 export class InternAssignment {
   @PrimaryGeneratedColumn()
@@ -25,4 +25,7 @@ export class InternAssignment {
 
   @Column({ type: 'date' })
   endDate: Date;
+
+  @OneToMany(() => Message, (message) => message.assignment)
+messages: Message[];
 }

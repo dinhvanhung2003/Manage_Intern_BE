@@ -5,10 +5,18 @@ import { RolesGuard } from '../auth/roles.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
 import { Body, Post, Delete, Param, ParseIntPipe } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Task } from '../tasks/entities/task.entity';
+import { Repository } from 'typeorm';
+@Roles('admin')
 @Controller('admin')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService,
+
+    @InjectRepository(Task)
+    private readonly taskRepo: Repository<Task>,
+  ) { }
 
   @Get('users')
   @Roles('admin')
@@ -35,4 +43,14 @@ export class AdminController {
   assignAll() {
     return this.adminService.enqueueRandomAssignments();
   }
+  // lấy tất cả các task 
+  @Get('tasks')
+  async getAllTasks() {
+  return await this.taskRepo.find({
+    relations: ['assignedTo', 'assignedBy'],
+    order: { dueDate: 'ASC' },
+  });
+}
+
+
 }

@@ -104,6 +104,23 @@ export class MentorService {
   return { message: ` Đã đẩy ${jobs.length} task vào queue từ bảng intern_assignments` };
 }
 
+async getAssignmentByMentor(mentorId: number) {
+  return this.assignmentRepo.findOne({
+    where: { mentorId },
+    relations: ['intern'], 
+  });
+}
+async getAssignmentsByMentor(mentorId: number) {
+  const assignments = await this.assignmentRepo.find({
+    where: { mentor: { id: mentorId } },
+    relations: ['intern'],
+  });
 
+  return assignments.map((a) => ({
+    id: a.id,
+    internId: a.intern.id,
+    internName: a.intern.name || a.intern.email, 
+  }));
+}
 
 }

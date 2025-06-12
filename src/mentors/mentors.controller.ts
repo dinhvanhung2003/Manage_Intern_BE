@@ -6,7 +6,7 @@ import { Post, Body } from '@nestjs/common';
 import { CreateTaskDto } from './dto/CreatTaskDto';
 import { Param } from '@nestjs/common';
 import { Patch } from '@nestjs/common';
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('mentor')
 export class MentorController {
   constructor(private readonly mentorService: MentorService) {}
@@ -31,10 +31,20 @@ async completeTask(@Param('id') id: number, @Req() req: Request) {
   const mentorId = (req.user as any).sub;
   return this.mentorService.markCompleted(id, mentorId);
 }
-
+@Get('assignment')
+async getMyAssignment(@Req() req: Request) {
+  const user = req.user as { sub: number };
+  return this.mentorService.getAssignmentByMentor(user.sub);
+}
 // message queue
 @Post('seed-tasks')
 seedTasks() {
   return this.mentorService.seedTasks();
+}
+
+@Get('assignments') 
+async getAllAssignments(@Req() req: Request) {
+  const user = req.user as { sub: number };
+  return this.mentorService.getAssignmentsByMentor(user.sub);
 }
 }
