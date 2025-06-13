@@ -12,10 +12,15 @@ import { Mentor } from './users/user.mentor';
 import { Admin } from './users/user.admin';
 import { Intern } from './users/user.intern';
 import { InternAssignment } from './admin/entities/user.assign';
-import { Task } from './tasks/entities/task.entity'; 
+import { Task } from './tasks/entities/task.entity';
 import { TasksModule } from './tasks/tasks.module';
 import { MessageModule } from './message/message.module';
-import { Message } from './message/entities/message.entity'; 
+import { Message } from './message/entities/message.entity';
+import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RedisOptions } from 'ioredis';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -25,9 +30,21 @@ import { Message } from './message/entities/message.entity';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User,Mentor,Admin,Intern,InternAssignment,Task,Message],
-      synchronize: true,       
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message],
+      synchronize: true,
     }),
+//   RedisModule.forRootAsync({
+//   useFactory: async () => ({
+//     host: 'localhost',
+//     port: 6379,
+//   }),
+// }),
+
+
+
+    ScheduleModule.forRoot(),
+
+
     AuthModule,
     UsersModule,
     InternsModule,
@@ -39,4 +56,4 @@ import { Message } from './message/entities/message.entity';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

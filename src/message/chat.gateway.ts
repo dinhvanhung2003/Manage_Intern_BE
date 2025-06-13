@@ -1,47 +1,39 @@
-import {
-  WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
-  WebSocketServer,
-  OnGatewayConnection,
-} from '@nestjs/websockets';
-import { Socket, Server } from 'socket.io';
-import { ChatService } from './message.service';
-import { CreateMessageDto } from './dto/CreateMessageDto';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
+import { Inject, Injectable } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
+import Redis from 'ioredis';
 
 @WebSocketGateway({ cors: true })
-export class ChatGateway implements OnGatewayConnection {
-  constructor(private readonly chatService: ChatService) {}
-
+@Injectable()
+export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  handleConnection(socket: Socket) {
-    console.log(`Client connected: ${socket.id}`);
-  }
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   @SubscribeMessage('join_room')
-  handleJoinRoom(
-    @MessageBody() assignmentId: number,
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleJoinRoom(@MessageBody() assignmentId: number, @ConnectedSocket() client: Socket) {
     const room = `assignment-${assignmentId}`;
     client.join(room);
-    console.log(`Client ${client.id} joined room ${room}`);
+
+    const raw = await this.redis.lrange(`chat:${room}`, 0, -1);
+    const messages = raw.map((m) => JSON.parse(m));
+
+    // client.emit('receive_message_history', messages);
   }
 
   @SubscribeMessage('send_message')
-  async handleMessage(
-    @MessageBody() dto: CreateMessageDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const savedMessage = await this.chatService.saveMessage(dto);
-    const room = `assignment-${dto.assignmentId}`;
+  async handleSendMessage(@MessageBody() msg: any, @ConnectedSocket() client: Socket) {
+    const room = `assignment-${msg.assignmentId}`;
+    const message = {
+      senderId: msg.senderId,
+      message: msg.message,
+      sentAt: new Date().toISOString(),
+    };
 
-    console.log(`[GATEWAY] Sending to room: ${room}`, savedMessage);
+    await this.redis.rpush(`chat:${room}`, JSON.stringify(message));
+    await this.redis.expire(`chat:${room}`, 86400);
 
-    this.server.to(room).emit('receive_message', savedMessage);
-    return savedMessage;
+    this.server.to(room).emit('receive_message', message);
   }
 }

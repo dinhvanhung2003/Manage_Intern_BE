@@ -9,4 +9,6 @@ export class CreateMessageDto {
 
   @IsString()
   message: string;
+  // them sentAt 
+  sentAt: Date;
 }
