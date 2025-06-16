@@ -6,9 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Task } from '../tasks/entities/task.entity'; 
 import { User } from '../users/user.entity';
 import { TaskGateway } from '../mentors/task.gateway';
+import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([InternAssignment,Task,User]), 
+    TypeOrmModule.forFeature([InternAssignment,Task,User]),  NotificationsModule
   ],
   controllers: [MentorController],
   providers: [MentorService,TaskGateway]

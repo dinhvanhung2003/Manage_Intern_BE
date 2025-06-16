@@ -20,6 +20,8 @@ import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RedisOptions } from 'ioredis';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { Notification } from './notifications/entities/user.notification';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message],
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification],
       synchronize: true,
     }),
 //   RedisModule.forRootAsync({
@@ -52,6 +54,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
     AdminModule,
     TasksModule,
     MessageModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

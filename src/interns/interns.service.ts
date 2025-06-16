@@ -7,6 +7,9 @@ import { TaskStatus } from '../tasks/entities/task.entity';
 import { ForbiddenException } from '@nestjs/common/exceptions/forbidden.exception';
 import { Task } from '../tasks/entities/task.entity';
 import { InternAssignment } from '../admin/entities/user.assign';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as glob from 'glob';
 @Injectable()
 export class InternsService {
   constructor(
@@ -52,16 +55,55 @@ export class InternsService {
     return this.taskRepo.save(task);
   }
   async findTasksByIntern(internId: number) {
-  return this.taskRepo.find({
-    where: { assignedTo: { id: internId } },
-    relations: ['assignedTo', 'assignedBy'], 
-    order: { dueDate: 'ASC' },
-  });
-}
+    return this.taskRepo.find({
+      where: { assignedTo: { id: internId } },
+      relations: ['assignedTo', 'assignedBy'],
+      order: { dueDate: 'ASC' },
+    });
+  }
+  // lay thong tin assignment cua intern
   async getAssignment(internId: number) {
     return this.assignmentRepo.findOne({
       where: { intern: { id: internId } },
       relations: ['mentor'],
     });
   }
+
+  // upload file anh 
+  async updateAvatar(userId: number, uploadedFile:any) {
+  const avatarsDir = path.resolve(process.cwd(), 'uploads', 'avatars');
+
+  // Tìm file avatar cũ (cùng userId, bất kỳ đuôi)
+  const pattern = path.join(avatarsDir, `avatar-${userId}.*`);
+  const existingFiles = glob.sync(pattern);
+
+  // Xóa ảnh cũ
+  for (const filePath of existingFiles) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error(`Lỗi khi xóa file cũ: ${filePath}`, err);
+    }
+  }
+
+  // Lấy phần mở rộng từ file mới
+  const ext = path.extname(uploadedFile.originalname);
+  const finalFileName = `avatar-${userId}${ext}`;
+  const finalPath = path.join(avatarsDir, finalFileName);
+
+  // Đổi tên file tạm sang tên chuẩn
+  fs.renameSync(uploadedFile.path, finalPath);
+
+  const avatarUrl = `/uploads/avatars/${finalFileName}`;
+  await this.internRepo.update(userId, { avatarUrl });
+
+  return {
+    message: 'Đã cập nhật avatar duy nhất cho user',
+    avatarUrl,
+  };
+}
+
+
+
+
 }

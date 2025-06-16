@@ -24,4 +24,8 @@ export class UpdateInternDto {
   @IsOptional()
   @IsString()
   linkedinLink?: string;
+
+  @IsOptional()
+  @IsString()
+  avatarUrl:string
 }

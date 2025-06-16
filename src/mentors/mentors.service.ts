@@ -12,6 +12,7 @@ import { taskQueue } from '../queues/user.queue';
 import { BulkJobOptions } from 'bullmq';
 import { Not, IsNull } from 'typeorm';
 import { TaskGateway } from './task.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class MentorService {
   constructor(
@@ -23,6 +24,7 @@ export class MentorService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly taskGateway: TaskGateway,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async getInternsOfMentor(mentorId: number): Promise<User[]> {
@@ -33,30 +35,36 @@ export class MentorService {
     return assignments.map((a) => a.intern);
   }
   async assignTask(mentorId: number, dto: CreateTaskDto) {
-  let intern: User | null = null;
+    let intern: User | null = null;
 
-  if (dto.assignedTo) {
-    intern = await this.userRepo.findOneBy({ id: dto.assignedTo });
-    if (!intern || intern.type !== 'intern') {
-      throw new Error('Người nhận không hợp lệ');
+    if (dto.assignedTo) {
+      intern = await this.userRepo.findOneBy({ id: dto.assignedTo });
+      if (!intern || intern.type !== 'intern') {
+        throw new Error('Người nhận không hợp lệ');
+      }
     }
+
+    const task = this.taskRepo.create({
+      ...dto,
+      dueDate: new Date(dto.dueDate),
+      assignedBy: { id: mentorId },
+      assignedTo: intern ?? null,
+    });
+
+    const savedTask = await this.taskRepo.save(task);
+
+    if (intern) {
+      const sent = await this.taskGateway.sendTaskAssigned(intern.id, savedTask);
+
+      if (!sent) {
+        const message = `Bạn vừa được giao task: ${savedTask.title}`;
+        await this.notificationsService.create(intern.id, message);
+      }
+
+    }
+
+    return savedTask;
   }
-
-  const task = this.taskRepo.create({
-    ...dto,
-    dueDate: new Date(dto.dueDate),
-    assignedBy: { id: mentorId },
-    assignedTo: intern ?? null,
-  });
-
-  const savedTask = await this.taskRepo.save(task);
-
-  if (intern) {
-    this.taskGateway.sendTaskAssigned(intern.id, savedTask);
-  }
-
-  return savedTask;
-}
 
   async getTasksOfIntern(mentorId: number, internId: number) {
 
@@ -190,7 +198,7 @@ export class MentorService {
 
     const saved = await this.taskRepo.save(newTask);
 
-    this.taskGateway.sendTaskAssigned(intern.id, saved); // 👈 Gửi socket thông báo
+    this.taskGateway.sendTaskAssigned(intern.id, saved);
 
     return saved;
   }
