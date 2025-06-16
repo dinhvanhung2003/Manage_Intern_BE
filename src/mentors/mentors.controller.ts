@@ -6,6 +6,7 @@ import { Post, Body } from '@nestjs/common';
 import { CreateTaskDto } from './dto/CreatTaskDto';
 import { Param } from '@nestjs/common';
 import { Patch } from '@nestjs/common';
+import { Delete } from '@nestjs/common';
 @UseGuards(JwtAuthGuard)
 @Controller('mentor')
 export class MentorController {
@@ -46,5 +47,25 @@ seedTasks() {
 async getAllAssignments(@Req() req: Request) {
   const user = req.user as { sub: number };
   return this.mentorService.getAssignmentsByMentor(user.sub);
+}
+//quan ly task 
+@Get('tasks')
+  async getAllMyTasks(@Req() req: Request) {
+    return this.mentorService.getAllTasksCreatedByMentor((req.user as any).sub);
+  }
+
+  @Delete('tasks/:id')
+  async deleteTask(@Param('id') id: number, @Req() req: Request) {
+    return this.mentorService.deleteTask(+id, (req.user as any).sub);
+  }
+
+  @Patch('tasks/:id')
+  async updateTask(@Param('id') id: number, @Req() req: Request, @Body() dto: Partial<CreateTaskDto>) {
+    return this.mentorService.updateTask(+id, (req.user as any).sub, dto);
+  }
+
+ @Post('tasks/reuse')
+assignFromExisting(@Body() body: { taskId: number; internId: number }) {
+  return this.mentorService.reassignTask(body.taskId, body.internId);
 }
 }

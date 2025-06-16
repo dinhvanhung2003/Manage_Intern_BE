@@ -24,22 +24,42 @@ async findAllInternsAndMentors(): Promise<User[]> {
     .getMany();
 }
  async assignIntern(dto: CreateAssignmentDto) {
-    const intern = await this.userRepo.findOneBy({ id: dto.internId });
     const mentor = await this.userRepo.findOneBy({ id: dto.mentorId });
+    if (!mentor || mentor.type !== 'mentor') {
+      throw new NotFoundException('Mentor không hợp lệ');
+    }
 
-    if (!intern || !mentor) throw new NotFoundException('Intern or Mentor not found');
-    if (intern.type !== 'intern') throw new Error('User is not intern');
-    if (mentor.type !== 'mentor') throw new Error('User is not mentor');
+    const interns = await this.userRepo.findByIds(dto.internIds);
 
-    const assignment = this.assignmentRepo.create({
-      intern,
-      mentor,
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-    });
+    const assignmentsToCreate: InternAssignment[] = [];
 
-    return this.assignmentRepo.save(assignment);
+    for (const intern of interns) {
+      if (intern.type !== 'intern') continue;
+
+      const alreadyAssigned = await this.assignmentRepo.findOne({
+        where: { internId: intern.id },
+      });
+
+      if (!alreadyAssigned) {
+        const assignment = this.assignmentRepo.create({
+          internId: intern.id,
+          mentorId: mentor.id,
+          startDate: dto.startDate,
+          endDate: dto.endDate,
+        });
+
+        assignmentsToCreate.push(assignment);
+      }
+    }
+
+    if (assignmentsToCreate.length === 0) {
+      throw new Error('Tất cả intern đã được gán rồi.');
+    }
+
+    return this.assignmentRepo.save(assignmentsToCreate);
   }
+
+
 
   findAllAssignments() {
     return this.assignmentRepo.find();
@@ -56,15 +76,21 @@ async findAllInternsAndMentors(): Promise<User[]> {
   const mentors = await this.userRepo.find({ where: { type: 'mentor' } });
 
   for (const intern of interns) {
-    const randomMentor = mentors[Math.floor(Math.random() * mentors.length)];
+    const existingAssignment = await this.assignmentRepo.findOne({
+      where: { intern: { id: intern.id } },
+    });
 
+    if (existingAssignment) continue; // Skip nếu intern đã được gán
+
+    const randomMentor = mentors[Math.floor(Math.random() * mentors.length)];
     await assignQueue.add('assign', {
       internId: intern.id,
       mentorId: randomMentor.id,
     });
   }
 
-  return { message: ` Đã đẩy ${interns.length} job vào hàng đợi assign-intern` };
+  return { message: `Đã đẩy các job gán vào hàng đợi.` };
 }
+
 
 }

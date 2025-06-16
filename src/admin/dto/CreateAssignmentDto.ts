@@ -1,8 +1,11 @@
-import { IsInt, IsDateString } from 'class-validator';
+import { IsInt, IsDateString, IsArray, ArrayNotEmpty, ArrayUnique } from 'class-validator';
 
 export class CreateAssignmentDto {
-  @IsInt()
-  internId: number;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  internIds: number[];
 
   @IsInt()
   mentorId: number;

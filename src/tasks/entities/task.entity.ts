@@ -24,7 +24,7 @@ export class Task {
   status: TaskStatus;
 
   @ManyToOne(() => User)
-  assignedTo: User;
+  assignedTo: User | null;
 
   @ManyToOne(() => User)
   assignedBy: User;

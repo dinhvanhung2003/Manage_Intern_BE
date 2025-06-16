@@ -5,11 +5,12 @@ import {InternAssignment} from '../admin/entities/user.assign';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Task } from '../tasks/entities/task.entity'; 
 import { User } from '../users/user.entity';
+import { TaskGateway } from '../mentors/task.gateway';
 @Module({
   imports: [
     TypeOrmModule.forFeature([InternAssignment,Task,User]), 
   ],
   controllers: [MentorController],
-  providers: [MentorService]
+  providers: [MentorService,TaskGateway]
 })
 export class MentorsModule {}
