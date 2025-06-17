@@ -22,6 +22,7 @@ import { RedisOptions } from 'ioredis';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { Notification } from './notifications/entities/user.notification';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PushSubscription } from './notifications/entities/push.subscription';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification],
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription],
       synchronize: true,
     }),
 //   RedisModule.forRootAsync({

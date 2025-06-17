@@ -54,13 +54,22 @@ export class MentorService {
     const savedTask = await this.taskRepo.save(task);
 
     if (intern) {
-      const sent = await this.taskGateway.sendTaskAssigned(intern.id, savedTask);
+      const message = `Bạn vừa được giao task: ${savedTask.title}`;
 
-      if (!sent) {
-        const message = `Bạn vừa được giao task: ${savedTask.title}`;
-        await this.notificationsService.create(intern.id, message);
+      // Gửi socket real-time nếu online
+      await this.taskGateway.sendTaskAssigned(intern.id, savedTask);
+
+      // Lưu thông báo trong DB
+      await this.notificationsService.create(intern.id, message);
+
+      // Gửi push notification
+      const subs = await this.notificationsService.getSubscriptionsByUser(intern.id);
+      if (subs.length > 0) {
+        await this.notificationsService.sendPushNotification(subs[0].subscription, {
+          title: 'Nhiệm vụ mới',
+          body: message,
+        });
       }
-
     }
 
     return savedTask;
