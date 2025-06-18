@@ -23,6 +23,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { Notification } from './notifications/entities/user.notification';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushSubscription } from './notifications/entities/push.subscription';
+import {TaskImage} from './tasks/entities/task.image';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { PushSubscription } from './notifications/entities/push.subscription';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription],
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage],
       synchronize: true,
     }),
 //   RedisModule.forRootAsync({

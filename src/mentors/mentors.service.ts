@@ -13,6 +13,8 @@ import { BulkJobOptions } from 'bullmq';
 import { Not, IsNull } from 'typeorm';
 import { TaskGateway } from './task.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 @Injectable()
 export class MentorService {
   constructor(
@@ -166,9 +168,34 @@ export class MentorService {
   }
 
   async deleteTask(taskId: number, mentorId: number) {
-    const task = await this.taskRepo.findOneBy({ id: taskId, assignedBy: { id: mentorId } });
+    const task = await this.taskRepo.findOne({
+      where: {
+        id: taskId,
+        assignedBy: { id: mentorId },
+      },
+      relations: ['images'], //  load images file nào xoá
+    });
+
     if (!task) throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
-    return this.taskRepo.remove(task);
+
+    // Xoá file vật lý
+    for (const image of task.images || []) {
+      const url = image.url;
+      if (!url) continue; // nếu url bị undefined thì bỏ qua
+
+      const filename = url.split('/').pop();
+      if (!filename) continue; // nếu không tách được filename
+
+      const filepath = join(__dirname, '..', '..', 'uploads', 'tasks', filename);
+      try {
+        await unlink(filepath); // xoá file vật lý
+      } catch (err) {
+        console.warn(`Không thể xoá file: ${filepath}`, err.message);
+      }
+    }
+
+
+    return this.taskRepo.remove(task); // xoá task + cascade taskImage
   }
 
   async updateTask(taskId: number, mentorId: number, dto: Partial<CreateTaskDto>) {
