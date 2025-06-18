@@ -1,17 +1,17 @@
+// task-image-upload.options.ts
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-export const avatarMulterOptions = {
+export const taskImageMulterOptions = {
   storage: diskStorage({
-    destination: './uploads/avatars',
+    destination: './uploads/tasks',
     filename: (req, file, cb) => {
-      const user = req.user as { sub: number };
-      const ext = extname(file.originalname); 
-      const fileName = `avatar-${user.sub}${ext}`;
-      cb(null, fileName);
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = extname(file.originalname);
+      cb(null, `task-${uniqueSuffix}${ext}`);
     },
   }),
   limits: {
-    fileSize: 2 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024, // 5MB
   },
 };

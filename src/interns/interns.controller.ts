@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateInternDto } from './dto/UpdateInternDTO';
 import { TaskStatus } from '../tasks/entities/task.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { avatarMulterOptions } from '../configs/multer.config';
+import { taskImageMulterOptions } from '../configs/multer.config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';

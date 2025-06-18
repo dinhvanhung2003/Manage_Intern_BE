@@ -71,11 +71,11 @@ export class MentorController {
   assignFromExisting(@Body() body: { taskId: number; internId: number }) {
     return this.mentorService.reassignTask(body.taskId, body.internId);
   }
-  @Roles('intern')
-  @Post('save-subscription')
-  @UseGuards(JwtAuthGuard)
-  async savePushSubscription(@Req() req: Request, @Body() subscription: any) {
-    const user = req.user as { sub: number };
-    return this.notificationsService.saveSubscription(user.sub, subscription);
-  }
+  // @Roles('intern')
+  // @Post('save-subscription')
+  // @UseGuards(JwtAuthGuard)
+  // async savePushSubscription(@Req() req: Request, @Body() subscription: any) {
+  //   const user = req.user as { sub: number };
+  //   return this.notificationsService.saveSubscription(user.sub, subscription);
+  // }
 }
