@@ -3,6 +3,7 @@ import { User } from '../../users/user.entity';
 import { TaskImage } from './task.image';
 import { OneToMany } from 'typeorm';
 import { DeleteDateColumn } from 'typeorm/decorator/columns/DeleteDateColumn';
+import { BaseSoftDeleteEntity } from '../../common/entities/base-soft-delete.entity';
 
 export enum TaskStatus {
   ASSIGNED = 'assigned',
@@ -11,9 +12,9 @@ export enum TaskStatus {
 }
 
 @Entity()
-export class Task {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class Task extends BaseSoftDeleteEntity {
+  // @PrimaryGeneratedColumn()
+  // id: number;
 
   @Column()
   title: string;
@@ -34,6 +35,6 @@ export class Task {
   dueDate: Date;
   @OneToMany(() => TaskImage, (image) => image.task, { cascade: true })
   images: TaskImage[];
-  @DeleteDateColumn({ nullable: true })
-  deletedAt?: Date;
+  // @DeleteDateColumn({ nullable: true })
+  // deletedAt?: Date;
 }

@@ -7,7 +7,7 @@ import {
   JoinColumn,
   TableInheritance,
 } from 'typeorm';
-
+import { BaseSoftDeleteEntity } from '../common/entities/base-soft-delete.entity';
 export enum UserRole {
   ADMIN = 'admin',
   INTERN = 'intern',
@@ -16,9 +16,9 @@ export enum UserRole {
 
 @Entity('users')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class User extends BaseSoftDeleteEntity {
+  // @PrimaryGeneratedColumn()
+  // id: number;
 
   @Column({ nullable: true })
   name: string;

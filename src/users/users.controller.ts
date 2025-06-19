@@ -19,6 +19,8 @@ import { UserRole } from './user.entity'
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
+Roles('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 // @UseGuards(JwtAuthGuard, RolesGuard)
 // @Roles("admin")
@@ -36,11 +38,11 @@ export class UsersController {
   getAllUsers(): Promise<User[]> {
     return this.usersService.findAll();
   }
-  @Get('/interns')
-  @Roles("mentor", "admin")
-  getInterns(): Promise<User[]> {
-    return this.usersService.findByType(UserRole.INTERN);
-  }
+  // @Get('/interns')
+  // @Roles("mentor", "admin")
+  // getInterns(): Promise<User[]> {
+  //   return this.usersService.findByType(UserRole.INTERN);
+  // }
   @Get(':id')
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
     return this.usersService.findOne(id);
