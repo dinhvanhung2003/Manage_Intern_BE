@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from '../../users/user.entity';
 import { TaskImage } from './task.image';
 import { OneToMany } from 'typeorm';
-
+import { DeleteDateColumn } from 'typeorm/decorator/columns/DeleteDateColumn';
 
 export enum TaskStatus {
   ASSIGNED = 'assigned',
@@ -33,5 +33,7 @@ export class Task {
   @Column({ type: 'date' })
   dueDate: Date;
   @OneToMany(() => TaskImage, (image) => image.task, { cascade: true })
-images: TaskImage[];
+  images: TaskImage[];
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
 }

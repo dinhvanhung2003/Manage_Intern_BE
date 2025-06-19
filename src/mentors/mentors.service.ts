@@ -167,35 +167,69 @@ export class MentorService {
     });
   }
 
+  // async deleteTask(taskId: number, mentorId: number) {
+  //   await this.taskRepo.find({
+  //     where: {
+  //       assignedBy: { id: mentorId },
+  //       deletedAt: IsNull(), // thêm điều kiện này
+  //     },
+  //   });
+
+  //   //   relations: ['images'], //  load images file nào xoá
+  //   // });
+
+  //   // if (!task) throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
+
+  //   // // Xoá file vật lý
+  //   // for (const image of task.images || []) {
+  //   //   const url = image.url;
+  //   //   if (!url) continue; // nếu url bị undefined thì bỏ qua
+
+  //   //   const filename = url.split('/').pop();
+  //   //   if (!filename) continue; // nếu không tách được filename
+
+  //   //   const filepath = join(__dirname, '..', '..', 'uploads', 'tasks', filename);
+  //   //   try {
+  //   //     await unlink(filepath); // xoá file vật lý
+  //   //   } catch (err) {
+  //   //     console.warn(`Không thể xoá file: ${filepath}`, err.message);
+  //   //   }
+  //   // }
+  //   await this.taskRepo.softRemove(task);
+  // }
   async deleteTask(taskId: number, mentorId: number) {
     const task = await this.taskRepo.findOne({
       where: {
         id: taskId,
         assignedBy: { id: mentorId },
+        deletedAt: IsNull(),
       },
-      relations: ['images'], //  load images file nào xoá
+      relations: ['images'],
+      withDeleted: false, // chỉ lấy task chưa bị xóa
     });
 
-    if (!task) throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
+    if (!task) {
+      throw new NotFoundException('Task không tồn tại hoặc bạn không có quyền');
+    }
 
     // Xoá file vật lý
     for (const image of task.images || []) {
       const url = image.url;
-      if (!url) continue; // nếu url bị undefined thì bỏ qua
+      if (!url) continue;
 
       const filename = url.split('/').pop();
-      if (!filename) continue; // nếu không tách được filename
+      if (!filename) continue;
 
       const filepath = join(__dirname, '..', '..', 'uploads', 'tasks', filename);
       try {
-        await unlink(filepath); // xoá file vật lý
+        await unlink(filepath);
       } catch (err) {
         console.warn(`Không thể xoá file: ${filepath}`, err.message);
       }
     }
 
-
-    return this.taskRepo.remove(task); // xoá task + cascade taskImage
+    // soft delete 
+    await this.taskRepo.softRemove(task);
   }
 
   async updateTask(taskId: number, mentorId: number, dto: Partial<CreateTaskDto>) {
@@ -239,7 +273,33 @@ export class MentorService {
     return saved;
   }
 
+ async restoreTask(taskId: number, mentorId: number) {
+  const task = await this.taskRepo.findOne({
+    where: { id: taskId },
+    withDeleted: true,
+    relations: ['assignedBy'], // ✅ thêm dòng này
+  });
+
+  if (!task || task.assignedBy.id !== mentorId) {
+    throw new NotFoundException('Không tìm thấy task hoặc bạn không có quyền');
+  }
+
+  return this.taskRepo.restore(taskId);
+}
 
 
+
+  //lay danh sach task bi xoa 
+  async getDeletedTasks(mentorId: number) {
+  return this.taskRepo.find({
+    where: {
+      assignedBy: { id: mentorId },
+      deletedAt: Not(IsNull()), 
+    },
+    withDeleted: true,
+    relations: ['assignedTo'],
+    order: { deletedAt: 'DESC' },
+  });
+}
 
 }

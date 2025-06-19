@@ -78,4 +78,17 @@ export class MentorController {
   //   const user = req.user as { sub: number };
   //   return this.notificationsService.saveSubscription(user.sub, subscription);
   // }
+  // khoi phuc task theo id
+  @Patch('tasks/:id/restore')
+  async restoreTask(@Param('id') taskId: number, @Req() req: Request) {
+    const mentorId = (req.user as any).sub;
+    return this.mentorService.restoreTask(+taskId, mentorId);
+  }
+  // lay cac task bi xoa 
+  @Get('tasks/deleted')
+  async getDeletedTasks(@Req() req: Request) {
+    const mentorId = (req.user as any).sub; 
+    return this.mentorService.getDeletedTasks(mentorId);
+  }
+
 }
