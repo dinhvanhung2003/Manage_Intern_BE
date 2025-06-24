@@ -6,9 +6,11 @@ import { Post, Body } from '@nestjs/common';
 import { CreateTaskDto } from './dto/CreatTaskDto';
 import { Param } from '@nestjs/common';
 import { Patch } from '@nestjs/common';
-import { Delete } from '@nestjs/common';
+import { Delete,Query } from '@nestjs/common';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Roles } from '../auth/roles.decorator';
+import { HttpCode } from '@nestjs/common';
+import { UseInterceptors } from '@nestjs/common';
 @UseGuards(JwtAuthGuard)
 @Controller('mentor')
 export class MentorController {
@@ -53,13 +55,19 @@ export class MentorController {
   }
   //quan ly task 
   @Get('tasks')
-  async getAllMyTasks(@Req() req: Request) {
-    return this.mentorService.getAllTasksCreatedByMentor((req.user as any).sub);
+  async getAllMyTasks(
+    @Req() req: Request,
+    @Query('title') title?: string
+  ) {
+    const mentorId = (req.user as any).sub;
+    return this.mentorService.getAllTasksCreatedByMentor(mentorId, title);
   }
 
+
+  @HttpCode(204)
   @Delete('tasks/:id')
   async deleteTask(@Param('id') id: number, @Req() req: Request) {
-    return this.mentorService.deleteTask(+id, (req.user as any).sub);
+    await this.mentorService.deleteTask(+id, (req.user as any).sub);
   }
 
   @Patch('tasks/:id')
@@ -87,8 +95,20 @@ export class MentorController {
   // lay cac task bi xoa 
   @Get('tasks/deleted')
   async getDeletedTasks(@Req() req: Request) {
-    const mentorId = (req.user as any).sub; 
+    const mentorId = (req.user as any).sub;
     return this.mentorService.getDeletedTasks(mentorId);
+  }
+
+
+  // phan cong khi da co task roi 
+  @Patch('tasks/:id/assign')
+  async assignTaskToIntern(
+    @Param('id') taskId: number,
+    @Req() req: Request,
+    @Body() body: { internId: number },
+  ) {
+    const mentorId = (req.user as any).sub;
+    return this.mentorService.assignTaskToIntern(taskId, body.internId, mentorId);
   }
 
 }

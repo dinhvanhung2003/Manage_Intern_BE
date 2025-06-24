@@ -13,10 +13,10 @@ import { CreateUserDto } from './dto/RegisterDTO';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
- @Post('register')
-register(@Body() body: CreateUserDto) {
-  return this.authService.register(body.email, body.password, body.type);
-}
+  @Post('register')
+  register(@Body() body: CreateUserDto) {
+    return this.authService.register(body.email, body.password, body.type);
+  }
 
 
   @Post('login')
@@ -50,7 +50,7 @@ register(@Body() body: CreateUserDto) {
   }
   @Post('refresh')
   async refresh(@Req() req: Request) {
-    console.log('Cookies:', req.cookies); 
+    console.log('Cookies:', req.cookies);
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token found');
@@ -60,7 +60,7 @@ register(@Body() body: CreateUserDto) {
     const { accessToken } = await this.authService.refreshTokens(userId, refreshToken);
     return { accessToken };
   }
- @Get('check-email')
+  @Get('check-email')
   async checkEmail(@Query('email') email: string) {
     const exists = await this.authService.checkEmailExists(email);
     return { exists }; // trả về { exists: true } hoặc { exists: false }

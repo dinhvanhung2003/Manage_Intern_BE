@@ -62,8 +62,10 @@ export class InternsController {
   @Get('tasks')
   async getMyTasks(@Req() req: Request) {
     const internId = (req.user as any).sub;
-    return this.internsService.findTasksByIntern(internId);
+    const search = (req.query.search as string) || '';
+    return this.internsService.findTasksByIntern(internId, search);
   }
+
 
   @Patch('tasks/:id/accept')
   async acceptTask(@Param('id') id: number, @Req() req: Request) {

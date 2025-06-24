@@ -15,6 +15,7 @@ import { TaskGateway } from './task.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { BadRequestException } from '@nestjs/common';
 @Injectable()
 export class MentorService {
   constructor(
@@ -159,13 +160,19 @@ export class MentorService {
 
 
   // Quản lý task 
-  async getAllTasksCreatedByMentor(mentorId: number) {
-    return this.taskRepo.find({
-      where: { assignedBy: { id: mentorId } },
-      relations: ['assignedTo'],
-      order: { dueDate: 'ASC' },
-    });
+  async getAllTasksCreatedByMentor(mentorId: number, title?: string) {
+  const query = this.taskRepo
+    .createQueryBuilder('task')
+    .leftJoinAndSelect('task.assignedTo', 'intern')
+    .where('task.assignedById = :mentorId', { mentorId });
+
+  if (title) {
+    query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
   }
+
+  return query.orderBy('task.dueDate', 'ASC').getMany();
+}
+
 
   // async deleteTask(taskId: number, mentorId: number) {
   //   await this.taskRepo.find({
@@ -273,33 +280,55 @@ export class MentorService {
     return saved;
   }
 
- async restoreTask(taskId: number, mentorId: number) {
-  const task = await this.taskRepo.findOne({
-    where: { id: taskId },
-    withDeleted: true,
-    relations: ['assignedBy'], // ✅ thêm dòng này
-  });
+  async restoreTask(taskId: number, mentorId: number) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      withDeleted: true,
+      relations: ['assignedBy'], // ✅ thêm dòng này
+    });
 
-  if (!task || task.assignedBy.id !== mentorId) {
-    throw new NotFoundException('Không tìm thấy task hoặc bạn không có quyền');
+    if (!task || task.assignedBy.id !== mentorId) {
+      throw new NotFoundException('Không tìm thấy task hoặc bạn không có quyền');
+    }
+
+    return this.taskRepo.restore(taskId);
   }
-
-  return this.taskRepo.restore(taskId);
-}
 
 
 
   //lay danh sach task bi xoa 
   async getDeletedTasks(mentorId: number) {
-  return this.taskRepo.find({
-    where: {
-      assignedBy: { id: mentorId },
-      deletedAt: Not(IsNull()), 
-    },
-    withDeleted: true,
-    relations: ['assignedTo'],
-    order: { deletedAt: 'DESC' },
-  });
-}
+    return this.taskRepo.find({
+      where: {
+        assignedBy: { id: mentorId },
+        deletedAt: Not(IsNull()),
+      },
+      withDeleted: true,
+      relations: ['assignedTo'],
+      order: { deletedAt: 'DESC' },
+    });
+  }
+
+
+  // tao task ma chua phan cong cho ai 
+  async assignTaskToIntern(taskId: number, internId: number, mentorId: number) {
+    const task = await this.taskRepo.findOne({
+      where: {
+        id: taskId,
+        assignedBy: { id: mentorId },
+      },
+    });
+    if (!task) {
+      throw new NotFoundException('Task không tồn tại hoặc không thuộc mentor');
+    }
+
+    if (task.assignedTo) {
+      throw new BadRequestException('Task đã được giao cho intern khác');
+    }
+
+    task.assignedTo = { id: internId } as any;
+    return await this.taskRepo.save(task);
+  }
+
 
 }

@@ -49,9 +49,6 @@ export class UsersService {
       .where('"user"."type" = :type', { type })
       .getMany();
   }
-
-
-
   //message queue 
 
   async seedUsers() {

@@ -9,10 +9,6 @@ import { Mentor } from '../users/user.mentor';
 import { Intern } from '../users/user.intern';
 import { Admin } from '../users/user.admin';
 
-
-
-
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -28,8 +24,6 @@ export class AuthService {
     @InjectRepository(Intern)
     private internRepo: Repository<Intern>,
   ) { }
-
-
 
   async register(email: string, password: string, type: string = 'intern') {
     const hashed = await bcrypt.hash(password, 10);
@@ -66,9 +60,6 @@ export class AuthService {
       throw new InternalServerErrorException('Đăng ký thất bại');
     }
   }
-
-
-
 
   async login(email: string, password: string) {
     const user = await this.userRepo.findOne({
@@ -115,7 +106,6 @@ export class AuthService {
       refreshToken,
     };
   }
-
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user || !user.refreshToken) {
@@ -139,7 +129,6 @@ export class AuthService {
       // refreshToken,
     };
   }
-
   async getProfile(userId: number) {
     return this.userRepo.findOneBy({ id: userId });
   }
@@ -154,15 +143,10 @@ export class AuthService {
     }
   }
 
-
-
   async checkEmailExists(email: string): Promise<boolean> {
     const user = await this.userRepo.findOne({ where: { email } });
     return !!user;
   }
-
-
-
 
 }
 

@@ -24,7 +24,10 @@ import { Notification } from './notifications/entities/user.notification';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushSubscription } from './notifications/entities/push.subscription';
 import {TaskImage} from './tasks/entities/task.image';
-
+import { CommonController } from './common/controllers/common-controller';
+import { HttpModule } from '@nestjs/axios';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-ioredis';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -43,12 +46,16 @@ import {TaskImage} from './tasks/entities/task.image';
 //     port: 6379,
 //   }),
 // }),
-
-
-
+ CacheModule.registerAsync({
+      isGlobal: true, 
+      useFactory: async () => ({
+        store: redisStore,
+        host: 'localhost',
+        port: 6379,
+        ttl: 300, 
+      }),
+    }),
     ScheduleModule.forRoot(),
-
-
     AuthModule,
     UsersModule,
     InternsModule,
@@ -57,8 +64,10 @@ import {TaskImage} from './tasks/entities/task.image';
     TasksModule,
     MessageModule,
     NotificationsModule,
+    HttpModule
+    
   ],
-  controllers: [AppController],
+  controllers: [AppController,CommonController],
   providers: [AppService],
 })
 export class AppModule { }

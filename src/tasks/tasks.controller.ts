@@ -10,11 +10,11 @@ import { taskImageMulterOptions } from '../configs/multer.config';
 import { Task } from '../tasks/entities/task.entity';
 import { BaseSoftDeleteController } from '../common/controllers/base-soft-delete';
 import { TaskService } from './tasks.service';
-
+import { Get, Query } from '@nestjs/common';
 @Controller('tasks')
 export class TasksController extends BaseSoftDeleteController<Task> {
   constructor(private readonly taskService: TaskService) {
-    super(taskService); 
+    super(taskService);
   }
 
   @Post('upload-image')
@@ -26,5 +26,17 @@ export class TasksController extends BaseSoftDeleteController<Task> {
     const url = `${process.env.HOST_URL}/uploads/tasks/${file.filename}`;
     const image = await this.taskService.uploadImage(taskId, url);
     return { url, imageId: image.id };
+  }
+
+  @Get()
+  async getFilteredTasks(
+    @Query('school') school?: string,
+    @Query('status') status?: string,
+    @Query('title') title?: string,
+    @Query('mentorId') mentorId?: number,
+    @Query('dueDateFrom') dueDateFrom?: string,
+    @Query('dueDateTo') dueDateTo?: string,
+  ): Promise<Task[]> {
+    return this.taskService.filterTasks({ school, status, title, mentorId, dueDateFrom, dueDateTo });
   }
 }

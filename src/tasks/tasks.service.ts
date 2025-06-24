@@ -29,4 +29,36 @@ export class TaskService extends BaseSoftDeleteService<Task> {
 
     return this.imageRepo.save(image);
   }
+
+  async filterTasks(filters: {
+    school?: string;
+    status?: string;
+    title?: string;
+    mentorId?: number;
+    dueDateFrom?: string;
+    dueDateTo?: string;
+  }): Promise<Task[]> {
+    const query = this.repo
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.assignedTo', 'intern')
+      .leftJoinAndSelect('task.assignedBy', 'mentor');
+
+    if (filters.title) {
+      query.andWhere(`task.title ILIKE :keyword OR task.description ILIKE :keyword`, {
+        keyword: `%${filters.title}%`,
+      });
+    }
+
+    if (filters.status) query.andWhere('task.status = :status', { status: filters.status });
+    if (filters.mentorId) query.andWhere('task.assignedBy.id = :mentorId', { mentorId: filters.mentorId });
+    if (filters.school) query.andWhere('intern.school ILIKE :school', { school: `%${filters.school}%` });
+    if (filters.dueDateFrom) query.andWhere('task.dueDate >= :from', { from: filters.dueDateFrom });
+    if (filters.dueDateTo) query.andWhere('task.dueDate <= :to', { to: filters.dueDateTo });
+
+    return await query.getMany();
+  }
+
+
+
+
 }

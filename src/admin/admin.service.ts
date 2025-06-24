@@ -7,9 +7,12 @@ import { InternAssignment } from './entities/user.assign';
 import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 import { assignQueue } from '../queues/user.queue'; 
+import { Task } from '../tasks/entities/task.entity';
 @Injectable()
 export class AdminService {
   constructor(
+    @InjectRepository(Task)
+    private readonly TaskRepo: Repository<Task>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
      @InjectRepository(InternAssignment)
@@ -90,6 +93,26 @@ async findAllInternsAndMentors(): Promise<User[]> {
   }
 
   return { message: `Đã đẩy các job gán vào hàng đợi.` };
+}
+async searchAllTasks(keyword?: string) {
+  const query = this.TaskRepo
+    .createQueryBuilder('task')
+    .leftJoinAndSelect('task.assignedTo', 'intern')
+    .leftJoinAndSelect('task.assignedBy', 'mentor');
+
+  if (keyword) {
+    const lowerKeyword = `%${keyword.toLowerCase()}%`;
+
+    query.where(`
+      LOWER(task.title) LIKE :kw OR
+      LOWER(task.description) LIKE :kw OR
+      LOWER(intern.name) LIKE :kw OR
+      LOWER(mentor.name) LIKE :kw OR
+      CAST(task.id AS TEXT) = :exactId
+    `, { kw: lowerKeyword, exactId: keyword.trim() });
+  }
+
+  return query.orderBy('task.dueDate', 'ASC').getMany();
 }
 
 

@@ -8,6 +8,7 @@ import { Body, Post, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Task } from '../tasks/entities/task.entity';
 import { Repository } from 'typeorm';
+import { Query } from '@nestjs/common';
 @Roles('admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,11 +46,8 @@ export class AdminController {
   }
   // lấy tất cả các task 
   @Get('tasks')
-  async getAllTasks() {
-  return await this.taskRepo.find({
-    relations: ['assignedTo', 'assignedBy'],
-    order: { dueDate: 'ASC' },
-  });
+async getAllTasks(@Query('keyword') keyword?: string) {
+  return this.adminService.searchAllTasks(keyword);
 }
 
 
