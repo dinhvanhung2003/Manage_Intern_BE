@@ -160,18 +160,36 @@ export class MentorService {
 
 
   // Quản lý task 
-  async getAllTasksCreatedByMentor(mentorId: number, title?: string) {
-  const query = this.taskRepo
-    .createQueryBuilder('task')
-    .leftJoinAndSelect('task.assignedTo', 'intern')
-    .where('task.assignedById = :mentorId', { mentorId });
+  async getAllTasksCreatedByMentor(
+    mentorId: number,
+    title?: string,
+    page = 1,
+    limit = 10,
+  ) {
+    const query = this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.assignedTo', 'intern')
+      .where('task.assignedById = :mentorId', { mentorId });
 
-  if (title) {
-    query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
+    if (title) {
+      query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
+    }
+
+    const [data, total] = await query
+      .orderBy('task.dueDate', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
-  return query.orderBy('task.dueDate', 'ASC').getMany();
-}
 
 
   // async deleteTask(taskId: number, mentorId: number) {

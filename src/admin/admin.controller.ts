@@ -20,10 +20,14 @@ export class AdminController {
   ) { }
 
   @Get('users')
-  @Roles('admin')
-  getAllUsers() {
-    return this.adminService.findAllInternsAndMentors();
-  }
+getAllUsers(
+  @Query('page') page: number = 1,
+  @Query('limit') limit: number = 10,
+  @Query('type') type: string,
+  @Query('search') search: string = '',
+) {
+  return this.adminService.findAllInternsAndMentors({ page, limit, type, search });
+}
   @Post('assignments')
   assign(@Body() dto: CreateAssignmentDto) {
     return this.adminService.assignIntern(dto);

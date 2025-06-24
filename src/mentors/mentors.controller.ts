@@ -55,13 +55,21 @@ export class MentorController {
   }
   //quan ly task 
   @Get('tasks')
-  async getAllMyTasks(
-    @Req() req: Request,
-    @Query('title') title?: string
-  ) {
-    const mentorId = (req.user as any).sub;
-    return this.mentorService.getAllTasksCreatedByMentor(mentorId, title);
-  }
+async getAllMyTasks(
+  @Req() req: Request,
+  @Query('title') title?: string,
+  @Query('page') page = '1',
+  @Query('limit') limit = '10',
+) {
+  const mentorId = (req.user as any).sub;
+  return this.mentorService.getAllTasksCreatedByMentor(
+    mentorId,
+    title,
+    parseInt(page),
+    parseInt(limit),
+  );
+}
+
 
 
   @HttpCode(204)
