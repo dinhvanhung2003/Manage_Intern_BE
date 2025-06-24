@@ -16,12 +16,16 @@ import { UseInterceptors } from '@nestjs/common';
 export class MentorController {
   constructor(private readonly mentorService: MentorService,
     private readonly notificationsService: NotificationsService) { }
-
+    // tim kiem intern
   @Get('interns')
-  async getMyInterns(@Req() req: Request) {
-    const user = req.user as { sub: number };
-    return this.mentorService.getInternsOfMentor(user.sub);
-  }
+async getMyInterns(
+  @Req() req: Request,
+  @Query('search') search?: string,
+) {
+  const user = req.user as { sub: number };
+  return this.mentorService.getInternsOfMentor(user.sub, search);
+}
+
   @Post('tasks')
   async assignTask(@Req() req: Request, @Body() dto: CreateTaskDto) {
     const user = req.user as { sub: number };

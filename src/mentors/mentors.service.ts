@@ -16,6 +16,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { BadRequestException } from '@nestjs/common';
+import { Intern } from '../users/user.intern';
 @Injectable()
 export class MentorService {
   constructor(
@@ -30,13 +31,24 @@ export class MentorService {
     private readonly notificationsService: NotificationsService,
   ) { }
 
-  async getInternsOfMentor(mentorId: number): Promise<User[]> {
-    const assignments = await this.assignmentRepo.find({
-      where: { mentor: { id: mentorId } },
-      relations: ['intern'],
-    });
-    return assignments.map((a) => a.intern);
+  async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
+  const assignments = await this.assignmentRepo.find({
+    where: { mentor: { id: mentorId } },
+    relations: ['intern'],
+  });
+
+  let interns = assignments.map((a) => a.intern as Intern); 
+
+  if (search) {
+    const keyword = search.toLowerCase();
+    interns = interns.filter((intern) =>
+      `${intern.name} ${intern.email} ${intern.school || ''}`.toLowerCase().includes(keyword)
+    );
   }
+
+  return interns;
+}
+
   async assignTask(mentorId: number, dto: CreateTaskDto) {
     let intern: User | null = null;
 
