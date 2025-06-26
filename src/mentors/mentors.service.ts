@@ -17,6 +17,14 @@ import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { BadRequestException } from '@nestjs/common';
 import { Intern } from '../users/user.intern';
+import { TaskStatusLogService } from '../tasks/task-status-log.service';
+const STATUS_LABELS: Record<string, string> = {
+  assigned: 'Chưa nhận',
+  in_progress: 'Đang làm',
+  completed: 'Hoàn thành',
+  error: 'Lỗi',
+};
+
 @Injectable()
 export class MentorService {
   constructor(
@@ -29,6 +37,7 @@ export class MentorService {
     private readonly userRepo: Repository<User>,
     private readonly taskGateway: TaskGateway,
     private readonly notificationsService: NotificationsService,
+     private readonly taskStatusLogService: TaskStatusLogService,
   ) { }
 
   async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
@@ -51,7 +60,6 @@ export class MentorService {
 
   async assignTask(mentorId: number, dto: CreateTaskDto) {
     let intern: User | null = null;
-
     if (dto.assignedTo) {
       intern = await this.userRepo.findOneBy({ id: dto.assignedTo });
       if (!intern || intern.type !== 'intern') {
@@ -359,6 +367,47 @@ export class MentorService {
     task.assignedTo = { id: internId } as any;
     return await this.taskRepo.save(task);
   }
+// Cập nhật trạng thái task từ mentor
+async updateTaskStatusByMentor(taskId: number, mentorId: number, newStatus: TaskStatus,note?: string,) {
+  const task = await this.taskRepo.findOne({
+    where: { id: taskId, assignedBy: { id: mentorId } },
+     relations: ['assignedTo'],
+  });
+
+  if (!task) {
+    throw new NotFoundException('Task không tồn tại hoặc không thuộc quyền của bạn');
+  }
+
+  const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
+    [TaskStatus.ASSIGNED]: [],
+    [TaskStatus.IN_PROGRESS]: [TaskStatus.ERROR],
+    [TaskStatus.ERROR]: [TaskStatus.ASSIGNED],
+    [TaskStatus.COMPLETED]: [TaskStatus.ASSIGNED],
+  };
+
+  const validTargets = allowedTransitions[task.status];
+  if (!validTargets.includes(newStatus)) {
+    throw new ForbiddenException(`Không thể chuyển trạng thái từ ${task.status} sang ${newStatus}`);
+  }
+
+  const fromStatus = task.status; //  khai báo 
+  task.status = newStatus;
+const internInfo = task.assignedTo
+  ? `Intern #${task.assignedTo.id} (${task.assignedTo.name || task.assignedTo.email})`
+  : 'Intern không xác định';
+  //  Ghi log
+  await this.taskStatusLogService.createLog({
+    taskId: task.id,
+    userId: mentorId, 
+    fromStatus,
+    toStatus: newStatus,
+    note: note,
+    message: `Mentor #${mentorId} cập nhật trạng thái cho ${internInfo}: từ "${STATUS_LABELS[fromStatus]}" sang "${STATUS_LABELS[newStatus]}"`,
+    fileUrl: task.submittedFile || '',
+  });
+
+  return this.taskRepo.save(task);
+}
 
 
 }

@@ -11,6 +11,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { Roles } from '../auth/roles.decorator';
 import { HttpCode } from '@nestjs/common';
 import { UseInterceptors } from '@nestjs/common';
+import { TaskStatus } from '../tasks/entities/task.entity';
+import { UpdateTaskStatusDto } from '../tasks/dtos/UpdateTaskStatusDTO';
 @UseGuards(JwtAuthGuard)
 @Controller('mentor')
 export class MentorController {
@@ -24,6 +26,15 @@ async getMyInterns(
 ) {
   const user = req.user as { sub: number };
   return this.mentorService.getInternsOfMentor(user.sub, search);
+}
+@Patch('tasks/:id/status')
+async mentorUpdateTaskStatus(
+  @Param('id') id: number,
+  @Body() body: UpdateTaskStatusDto, // ✅ dùng DTO
+  @Req() req: Request,
+) {
+  const mentorId = (req.user as any).sub;
+  return this.mentorService.updateTaskStatusByMentor(+id, mentorId, body.status, body.note); 
 }
 
   @Post('tasks')

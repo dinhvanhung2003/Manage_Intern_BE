@@ -27,6 +27,7 @@ import {TaskImage} from './tasks/entities/task.image';
 import { CommonController } from './common/controllers/common-controller';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
+import { TaskStatusLog } from './tasks/entities/task.log';
 import * as redisStore from 'cache-manager-ioredis';
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import * as redisStore from 'cache-manager-ioredis';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage],
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage,TaskStatusLog],
       synchronize: true,
     }),
 //   RedisModule.forRootAsync({

@@ -7,6 +7,7 @@ import {
   JoinColumn,
   TableInheritance,
 } from 'typeorm';
+import { TaskStatusLog } from '../tasks/entities/task.log';
 import { BaseSoftDeleteEntity } from '../common/entities/base-soft-delete.entity';
 export enum UserRole {
   ADMIN = 'admin',
@@ -58,4 +59,6 @@ export class User extends BaseSoftDeleteEntity {
   // mentor → interns
   @OneToMany(() => User, (user) => user.mentor)
   interns: User[];
+  @OneToMany(() => TaskStatusLog, log => log.user)
+statusLogs: TaskStatusLog[];
 }

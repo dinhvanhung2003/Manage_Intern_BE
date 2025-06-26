@@ -10,11 +10,12 @@ import { InternAssignment } from '../admin/entities/user.assign';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as glob from 'glob';
-
+import { BadRequestException } from '@nestjs/common/exceptions/bad-request.exception';
 
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { TaskStatusLogService } from '../tasks/task-status-log.service';
 @Injectable()
 export class InternsService {
   constructor(
@@ -24,7 +25,8 @@ export class InternsService {
     private assignmentRepo: Repository<InternAssignment>,
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+      private readonly taskStatusLogService: TaskStatusLogService,
   ) { }
 
   async getProfile(id: number): Promise<Intern> {
@@ -40,26 +42,26 @@ export class InternsService {
     return this.getProfile(id);
   }
 
-  async updateStatus(taskId: number, internId: number, status: TaskStatus) {
-    const task = await this.taskRepo.findOne({
-      where: {
-        id: taskId,
-        assignedTo: { id: internId },
-      },
-      relations: ['assignedTo'],
-    });
+  // async updateStatus(taskId: number, internId: number, status: TaskStatus) {
+  //   const task = await this.taskRepo.findOne({
+  //     where: {
+  //       id: taskId,
+  //       assignedTo: { id: internId },
+  //     },
+  //     relations: ['assignedTo'],
+  //   });
 
-    if (!task) {
-      throw new NotFoundException('Task không tồn tại hoặc không thuộc về bạn');
-    }
+  //   if (!task) {
+  //     throw new NotFoundException('Task không tồn tại hoặc không thuộc về bạn');
+  //   }
 
-    if (task.status !== TaskStatus.ASSIGNED) {
-      throw new ForbiddenException('Chỉ được chấp nhận task ở trạng thái "assigned"');
-    }
+  //   if (task.status !== TaskStatus.ASSIGNED) {
+  //     throw new ForbiddenException('Chỉ được chấp nhận task ở trạng thái "assigned"');
+  //   }
 
-    task.status = status;
-    return this.taskRepo.save(task);
-  }
+  //   task.status = status;
+  //   return this.taskRepo.save(task);
+  // }
   async findTasksByIntern(internId: number, search: string) {
     const key = `intern:${internId}:search:${search || 'all'}`;
     const cached = await this.cacheManager.get(key);
@@ -140,4 +142,80 @@ export class InternsService {
       avatarUrl,
     };
   }
+
+
+  // update status 
+  async updateStatus(
+  taskId: number,
+  internId: number,
+  newStatus: TaskStatus,
+  submittedText?: string,
+  file?: any,
+   note?: string,
+) {
+  const task = await this.taskRepo.findOne({
+    where: { id: taskId },
+    relations: ['assignedTo'],
+  });
+
+  if (!task || task.assignedTo?.id !== internId) {
+    throw new ForbiddenException('Bạn không có quyền với task này');
+  }
+
+  const fromStatus = task.status;
+
+  // Xử lý các bước cập nhật trạng thái hợp lệ
+  if (fromStatus === TaskStatus.ASSIGNED && newStatus === TaskStatus.IN_PROGRESS) {
+    task.status = newStatus;
+
+  } else if (
+    (fromStatus === TaskStatus.IN_PROGRESS || fromStatus === TaskStatus.ERROR)
+    && newStatus === TaskStatus.COMPLETED
+  ) {
+    if (!submittedText && !file) {
+      throw new BadRequestException('Bạn phải nộp nội dung hoặc file');
+    }
+
+    task.status = newStatus;
+    task.submittedText = submittedText || '';
+
+    if (file) {
+      const ext = path.extname(file.originalname);
+      const newFilename = `${file.filename}${ext}`;
+      const oldPath = file.path;
+      const newPath = path.join(path.dirname(file.path), newFilename);
+
+      fs.renameSync(oldPath, newPath);
+      task.submittedFile = newFilename;
+    }
+
+  } else {
+    throw new ForbiddenException('Chuyển trạng thái không hợp lệ');
+  }
+
+  await this.taskRepo.save(task);
+
+  // Ghi log trạng thái
+  const STATUS_LABELS: Record<string, string> = {
+    assigned: 'Chưa nhận',
+    in_progress: 'Đang làm',
+    completed: 'Hoàn thành',
+    error: 'Lỗi',
+  };
+
+  await this.taskStatusLogService.createLog({
+    taskId: task.id,
+    userId: internId,
+    fromStatus,
+    toStatus: task.status,
+    note:note,
+    message: `Intern chuyển trạng thái từ "${STATUS_LABELS[fromStatus]}" sang "${STATUS_LABELS[task.status]}"`,
+    fileUrl: task.submittedFile ?? '',
+  });
+
+  return task;
+}
+
+
+
 }

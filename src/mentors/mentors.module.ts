@@ -7,9 +7,10 @@ import { Task } from '../tasks/entities/task.entity';
 import { User } from '../users/user.entity';
 import { TaskGateway } from '../mentors/task.gateway';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TasksModule } from '../tasks/tasks.module';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([InternAssignment,Task,User]),  NotificationsModule
+    TypeOrmModule.forFeature([InternAssignment,Task,User]),  NotificationsModule,TasksModule
   ],
   controllers: [MentorController],
   providers: [MentorService,TaskGateway]

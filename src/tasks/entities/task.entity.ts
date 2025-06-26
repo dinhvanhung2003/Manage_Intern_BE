@@ -4,12 +4,14 @@ import { TaskImage } from './task.image';
 import { OneToMany } from 'typeorm';
 import { DeleteDateColumn } from 'typeorm/decorator/columns/DeleteDateColumn';
 import { BaseSoftDeleteEntity } from '../../common/entities/base-soft-delete.entity';
-
+import { TaskStatusLog } from './task.log';
 export enum TaskStatus {
-  ASSIGNED = 'assigned',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
+  ASSIGNED = 'assigned',        // Mới khởi tạo (chưa nhận)
+  IN_PROGRESS = 'in_progress',  // Đang xử lý
+  COMPLETED = 'completed',      // Đã hoàn thành (đã submit)
+  ERROR = 'error',              // Lỗi (do mentor đánh giá)
 }
+
 
 @Entity()
 export class Task extends BaseSoftDeleteEntity {
@@ -37,4 +39,12 @@ export class Task extends BaseSoftDeleteEntity {
   images: TaskImage[];
   // @DeleteDateColumn({ nullable: true })
   // deletedAt?: Date;
+
+  @Column({ type: 'text', nullable: true })
+submittedText?: string;
+
+@Column({ nullable: true })
+submittedFile?: string;
+@OneToMany(() => TaskStatusLog, log => log.task)
+statusLogs: TaskStatusLog[];
 }

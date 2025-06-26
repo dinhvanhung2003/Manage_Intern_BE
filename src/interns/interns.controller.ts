@@ -10,6 +10,7 @@ import {
   Patch,
   Param,
   BadRequestException,
+  Post
 } from '@nestjs/common';
 import { Request } from 'express';
 import { InternsService } from './interns.service';
@@ -21,7 +22,10 @@ import { taskImageMulterOptions } from '../configs/multer.config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
-
+import { ReqUser } from '../auth/req-user.decorators';
+import { User } from '../users/user.entity';
+import { ParseIntPipe } from '@nestjs/common/pipes/parse-int.pipe';
+import { Task } from '../tasks/entities/task.entity';
 @Controller('interns')
 @UseGuards(JwtAuthGuard)
 export class InternsController {
@@ -95,6 +99,29 @@ export class InternsController {
 
     return this.internsService.updateAvatar(user.sub, file);
   }
+
+  // gui file bao cao 
+@Patch('tasks/:id/submit')
+@UseInterceptors(FileInterceptor('file', taskImageMulterOptions))
+async updateTaskStatus(
+  @Param('id') taskId: number,
+  @UploadedFile() file: any,
+  @Body('submittedText') submittedText: string,
+  @Body('note') note: string,
+  @ReqUser() user: any,
+) {
+  return this.internsService.updateStatus(
+    taskId,
+    user.sub,
+    TaskStatus.COMPLETED,
+    submittedText,
+    file,
+    note, // 
+  );
+}
+
+
+
 
 
 }
