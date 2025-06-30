@@ -7,17 +7,21 @@ import { InternAssignment } from '../admin/entities/user.assign';
 import { ChatGateway } from './chat.gateway';
 import { RedisClientProvider } from './redis.provider'; 
 import { ChatSyncService } from './message.sync'; 
+import { ChatGroup } from './entities/chat-group.entity';
+import { ChatGroupController } from './chat-group.controller';
+import { User } from '../users/user.entity'; 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Message, InternAssignment]),
+    TypeOrmModule.forFeature([Message, InternAssignment,ChatGroup,User]),
   ],
-  controllers: [MessageController],
+  controllers: [MessageController,ChatGroupController],
   providers: [
+    RedisClientProvider,
     ChatService,
     ChatGateway,
-    RedisClientProvider,
+    
      ChatSyncService,
   ],
-  exports: [RedisClientProvider], 
+  exports: [RedisClientProvider,ChatService,], 
 })
 export class MessageModule {}

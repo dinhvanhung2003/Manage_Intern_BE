@@ -322,7 +322,7 @@ export class MentorService {
     const task = await this.taskRepo.findOne({
       where: { id: taskId },
       withDeleted: true,
-      relations: ['assignedBy'], // ✅ thêm dòng này
+      relations: ['assignedBy'], // 
     });
 
     if (!task || task.assignedBy.id !== mentorId) {

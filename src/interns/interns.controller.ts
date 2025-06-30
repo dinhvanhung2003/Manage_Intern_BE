@@ -72,10 +72,15 @@ export class InternsController {
 
 
   @Patch('tasks/:id/accept')
-  async acceptTask(@Param('id') id: number, @Req() req: Request) {
+  async acceptTask(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Body('note') note: string,
+  ) {
     const internId = (req.user as any).sub;
-    return this.internsService.updateStatus(id, internId, TaskStatus.IN_PROGRESS);
+    return this.internsService.updateStatus(id, internId, TaskStatus.IN_PROGRESS, undefined, undefined, note);
   }
+
 
   @Get('assignment')
   async getAssignment(@Req() req: Request) {
@@ -101,24 +106,24 @@ export class InternsController {
   }
 
   // gui file bao cao 
-@Patch('tasks/:id/submit')
-@UseInterceptors(FileInterceptor('file', taskImageMulterOptions))
-async updateTaskStatus(
-  @Param('id') taskId: number,
-  @UploadedFile() file: any,
-  @Body('submittedText') submittedText: string,
-  @Body('note') note: string,
-  @ReqUser() user: any,
-) {
-  return this.internsService.updateStatus(
-    taskId,
-    user.sub,
-    TaskStatus.COMPLETED,
-    submittedText,
-    file,
-    note, // 
-  );
-}
+  @Patch('tasks/:id/submit')
+  @UseInterceptors(FileInterceptor('file', taskImageMulterOptions))
+  async updateTaskStatus(
+    @Param('id') taskId: number,
+    @UploadedFile() file: any,
+    @Body('submittedText') submittedText: string,
+    @Body('note') note: string,
+    @ReqUser() user: any,
+  ) {
+    return this.internsService.updateStatus(
+      taskId,
+      user.sub,
+      TaskStatus.COMPLETED,
+      submittedText,
+      file,
+      note, // 
+    );
+  }
 
 
 

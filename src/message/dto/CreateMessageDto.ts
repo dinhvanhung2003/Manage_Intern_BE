@@ -2,7 +2,7 @@ import { IsInt, IsString } from 'class-validator';
 
 export class CreateMessageDto {
   @IsInt()
-  assignmentId: number;
+  assignmentId?: number;
 
   @IsInt()
   senderId: number;
@@ -10,5 +10,8 @@ export class CreateMessageDto {
   @IsString()
   message: string;
   // them sentAt 
-  sentAt: Date;
+  sentAt?: Date;
+  // sentAt: Date;
+    groupId?: number;
 }
+

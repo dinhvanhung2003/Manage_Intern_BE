@@ -23,4 +23,16 @@ export class MessageController {
     // Gộp 2 nguồn
     return [...dbMsgs, ...parsedRedis];
   }
+  @Get('group/:groupId')
+async getGroupMessages(@Param('groupId') groupId: string) {
+  const redisKey = `chat:group-${groupId}`;
+  const redisMsgs = await this.redis.lrange(redisKey, 0, -1);
+  const parsedRedis = redisMsgs.map((m) => JSON.parse(m));
+
+  const dbMsgs = await this.chatService.getMessagesByGroup(Number(groupId));
+  return [...dbMsgs, ...parsedRedis];
+}
+
+
+
 }

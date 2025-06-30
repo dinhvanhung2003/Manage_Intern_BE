@@ -1,7 +1,7 @@
 // src/chat/entities/message.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import {InternAssignment} from '../../admin/entities/user.assign'
-
+import { InternAssignment } from '../../admin/entities/user.assign'
+import { ChatGroup } from './chat-group.entity';
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn()
@@ -10,6 +10,8 @@ export class Message {
   @ManyToOne(() => InternAssignment, (assignment) => assignment.messages, { onDelete: 'CASCADE' })
   assignment: InternAssignment;
 
+  @ManyToOne(() => ChatGroup, { nullable: true, onDelete: 'CASCADE' })
+  group: ChatGroup;
   @Column()
   senderId: number;
 

@@ -29,6 +29,7 @@ import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TaskStatusLog } from './tasks/entities/task.log';
 import * as redisStore from 'cache-manager-ioredis';
+import { ChatGroup } from './message/entities/chat-group.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -38,7 +39,7 @@ import * as redisStore from 'cache-manager-ioredis';
       username: 'postgres',
       password: 'Hung12122003',
       database: 'manage_intern',
-      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage,TaskStatusLog],
+      entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage,TaskStatusLog,ChatGroup],
       synchronize: true,
     }),
 //   RedisModule.forRootAsync({
