@@ -19,4 +19,7 @@ export class ChatGroup {
   @ManyToMany(() => User, { eager: true }) 
 @JoinTable()
 members: User[];
+
+@Column( {nullable: true})
+  creatorId?: number;
 }

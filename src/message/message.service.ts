@@ -60,7 +60,7 @@ async getAllGroups() {
 
 
 
-async createGroup(name: string, memberIds: number[]) {
+async createGroup(name: string, memberIds: number[], creatorId: number) {
   if (!name || name.trim() === '') {
     throw new BadRequestException('Tên nhóm là bắt buộc.');
   }
@@ -80,6 +80,7 @@ async createGroup(name: string, memberIds: number[]) {
   const group = this.groupRepo.create({
     name,
     members: users,
+      creatorId
   });
 
   const savedGroup = await this.groupRepo.save(group);
@@ -93,16 +94,21 @@ async createGroup(name: string, memberIds: number[]) {
 
 
 
-async getGroupsOfUser(userId: number) {
-  return this.groupRepo.find({
-    relations: ['members'],
-    where: {
-      members: {
-        id: userId,
-      },
-    },
-  });
+async getGroupsOfUser(userId: number, role: 'mentor' | 'intern') {
+  if (role === 'mentor') {
+    return this.groupRepo.find({
+      where: { creatorId: userId },
+      relations: ['members'],
+    });
+  } else {
+    return this.groupRepo
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.members', 'member')
+      .where('member.id = :userId', { userId })
+      .getMany();
+  }
 }
+
 
 
 async getUserById(id: number) {

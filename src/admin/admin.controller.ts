@@ -33,10 +33,14 @@ getAllUsers(
     return this.adminService.assignIntern(dto);
   }
 
-  @Get('assignments')
-  findAll() {
-    return this.adminService.findAllAssignments();
-  }
+ @Get('assignments')
+searchAssignments(
+  @Query('page') page: number = 1,
+  @Query('limit') limit: number = 10,
+  @Query('search') search?: string,
+) {
+  return this.adminService.searchAssignments({ page, limit, search });
+}
 
   @Delete('assignments/:id')
   delete(@Param('id', ParseIntPipe) id: number) {
@@ -50,9 +54,18 @@ getAllUsers(
   }
   // lấy tất cả các task 
   @Get('tasks')
-async getAllTasks(@Query('keyword') keyword?: string) {
-  return this.adminService.searchAllTasks(keyword);
+async getAllTasks(
+  @Query('keyword') keyword?: string,
+  @Query('page') page: number = 1,
+  @Query('limit') limit: number = 10,
+) {
+  return this.adminService.searchAllTasks(keyword, page, limit);
 }
 
+  // lay intern chua duoc phan cong 
+  @Get('interns/unassigned')
+async getUnassignedInterns() {
+  return this.adminService.findUnassignedInterns();
+}
 
 }

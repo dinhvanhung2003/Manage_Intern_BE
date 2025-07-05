@@ -110,7 +110,7 @@ export class InternsService {
   }
 
   // upload file anh 
-  async updateAvatar(userId: number, uploadedFile: any) {
+ async updateAvatar(userId: number, uploadedFile: any) {
     const avatarsDir = path.resolve(process.cwd(), 'uploads', 'avatars');
 
     // Tìm file avatar cũ (cùng userId, bất kỳ đuôi)

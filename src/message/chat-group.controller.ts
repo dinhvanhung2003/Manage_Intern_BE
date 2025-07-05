@@ -22,18 +22,27 @@ export class ChatGroupController {
   }
 
   @Post()
-  async createGroup(@Body() body: { name: string; memberIds: number[] }) {
-    const group = await this.chatService.createGroup(body.name, body.memberIds);
+async createGroup(
+  @Body() body: { name: string; memberIds: number[] },
+  @Req() req: any
+) {
+  const creatorId = req.user.sub;
 
-    this.chatGateway.notifyNewGroup(group, body.memberIds);
+  const group = await this.chatService.createGroup(body.name, body.memberIds, creatorId);
 
-    return group;
-  }
-  @Get('my')
-getGroupsOfUser(@Req() req: any) {
-  const userId = req.user.sub;
-  return this.chatService.getGroupsOfUser(userId);
+  this.chatGateway.notifyNewGroup(group, body.memberIds);
+
+  return group;
 }
+
+ @Get('my')
+async getGroupsOfUser(@Req() req: any) {
+  const userId = req.user.sub;
+  const role = req.user.role; 
+
+  return this.chatService.getGroupsOfUser(userId, role);
+}
+
 @Delete(':id')
 async deleteGroup(@Param('id') id: number) {
   await this.chatService.deleteGroup(id);

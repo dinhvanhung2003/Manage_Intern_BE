@@ -8,6 +8,7 @@ import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 import { assignQueue } from '../queues/user.queue';
 import { Task } from '../tasks/entities/task.entity';
+import { In,Not } from 'typeorm';
 @Injectable()
 export class AdminService {
   constructor(
@@ -88,9 +89,35 @@ export class AdminService {
 
 
 
-  findAllAssignments() {
-    return this.assignmentRepo.find();
+  async searchAssignments(params: {
+  page: number;
+  limit: number;
+  search?: string;
+}) {
+  const { page, limit, search } = params;
+  const query = this.assignmentRepo
+    .createQueryBuilder('assignment')
+    .leftJoinAndSelect('assignment.intern', 'intern')
+    .leftJoinAndSelect('assignment.mentor', 'mentor');
+
+  if (search) {
+    const keyword = `%${search.toLowerCase()}%`;
+    query.where(`
+      LOWER(intern.name) LIKE :kw OR
+      LOWER(mentor.name) LIKE :kw OR
+      LOWER(intern.email) LIKE :kw OR
+      LOWER(mentor.email) LIKE :kw
+    `, { kw: keyword });
   }
+
+  const [data, total] = await query
+    .orderBy('assignment.id', 'DESC')
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount();
+
+  return { data, total };
+}
 
   removeAssignment(id: number) {
     return this.assignmentRepo.delete(id);
@@ -118,26 +145,55 @@ export class AdminService {
 
     return { message: `Đã đẩy các job gán vào hàng đợi.` };
   }
-  async searchAllTasks(keyword?: string) {
-    const query = this.TaskRepo
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.assignedTo', 'intern')
-      .leftJoinAndSelect('task.assignedBy', 'mentor');
+  async searchAllTasks(keyword?: string, page: number = 1, limit: number = 10) {
+  const query = this.TaskRepo
+    .createQueryBuilder('task')
+    .leftJoinAndSelect('task.assignedTo', 'intern')
+    .leftJoinAndSelect('task.assignedBy', 'mentor');
 
-    if (keyword) {
-      const lowerKeyword = `%${keyword.toLowerCase()}%`;
-
-      query.where(`
+  if (keyword) {
+    const lowerKeyword = `%${keyword.toLowerCase()}%`;
+    query.where(`
       LOWER(task.title) LIKE :kw OR
       LOWER(task.description) LIKE :kw OR
       LOWER(intern.name) LIKE :kw OR
       LOWER(mentor.name) LIKE :kw OR
       CAST(task.id AS TEXT) = :exactId
     `, { kw: lowerKeyword, exactId: keyword.trim() });
-    }
-
-    return query.orderBy('task.dueDate', 'ASC').getMany();
   }
+
+  const [data, total] = await query
+    .orderBy('task.dueDate', 'ASC')
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount();
+
+  return {
+    data,
+    total,
+    nextPage: page * limit >= total ? null : page + 1
+  };
+}
+
+// intern chua duoc phan cong 
+async findUnassignedInterns() {
+  const assignedInterns = await this.assignmentRepo
+    .createQueryBuilder('a')
+    .select('a.internId')
+    .getMany();
+
+  const assignedIds = assignedInterns.map(a => a.internId);
+
+  const unassigned = await this.userRepo.find({
+    where: {
+      type: 'intern',
+      id: assignedIds.length > 0 ? Not(In(assignedIds)) : undefined,
+    },
+    order: { id: 'ASC' },
+  });
+
+  return unassigned;
+}
 
 
 }
