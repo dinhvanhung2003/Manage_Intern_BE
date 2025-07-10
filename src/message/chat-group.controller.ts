@@ -72,5 +72,9 @@ async removeMember(
 
   return group;
 }
-
+@Get('created-by-me')
+async getGroupsCreatedByMe(@Req() req: any) {
+  const userId = req.user.sub;
+  return this.chatService.getGroupsCreatedByUser(userId);
+}
 }

@@ -40,7 +40,7 @@ export class MentorService {
      private readonly taskStatusLogService: TaskStatusLogService,
   ) { }
 
-  async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
+async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
   const assignments = await this.assignmentRepo.find({
     where: { mentor: { id: mentorId } },
     relations: ['intern'],
@@ -48,15 +48,20 @@ export class MentorService {
 
   let interns = assignments.map((a) => a.intern as Intern); 
 
+  function removeAccents(str: string): string {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   if (search) {
-    const keyword = search.toLowerCase();
+    const keyword = removeAccents(search);
     interns = interns.filter((intern) =>
-      `${intern.name} ${intern.email} ${intern.school || ''}`.toLowerCase().includes(keyword)
+      removeAccents(`${intern.name} ${intern.email} ${intern.school || ''}`).includes(keyword)
     );
   }
 
   return interns;
 }
+
 
   async assignTask(mentorId: number, dto: CreateTaskDto) {
     let intern: User | null = null;
@@ -180,35 +185,41 @@ export class MentorService {
 
 
   // Quản lý task 
-  async getAllTasksCreatedByMentor(
-    mentorId: number,
-    title?: string,
-    page = 1,
-    limit = 10,
-  ) {
-    const query = this.taskRepo
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.assignedTo', 'intern')
-      .where('task.assignedById = :mentorId', { mentorId });
+ async getAllTasksCreatedByMentor(
+  mentorId: number,
+  title?: string,
+  page = 1,
+  limit = 10,
+  unassignedOnly = false,
+) {
+  const query = this.taskRepo
+    .createQueryBuilder('task')
+    .leftJoinAndSelect('task.assignedTo', 'intern')
+    .where('task.assignedById = :mentorId', { mentorId });
 
-    if (title) {
-      query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
-    }
-
-    const [data, total] = await query
-      .orderBy('task.dueDate', 'ASC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+  if (title) {
+    query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
   }
+
+  if (unassignedOnly) {
+  query.andWhere('task."assignedToId" IS NULL'); 
+}
+
+  const [data, total] = await query
+    .orderBy('task.dueDate', 'ASC')
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount();
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
 
 
 

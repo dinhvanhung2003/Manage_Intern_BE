@@ -75,6 +75,7 @@ async getAllMyTasks(
   @Query('title') title?: string,
   @Query('page') page = '1',
   @Query('limit') limit = '10',
+   @Query('unassignedOnly') unassignedOnly = 'false',
 ) {
   const mentorId = (req.user as any).sub;
   return this.mentorService.getAllTasksCreatedByMentor(
@@ -82,6 +83,7 @@ async getAllMyTasks(
     title,
     parseInt(page),
     parseInt(limit),
+     unassignedOnly === 'true',
   );
 }
 

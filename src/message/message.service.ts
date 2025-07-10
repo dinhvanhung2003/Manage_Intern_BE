@@ -172,4 +172,13 @@ async removeMemberFromGroup(groupId: number, userId: number) {
 }
 
 
+
+async getGroupsCreatedByUser(userId: number) {
+  return this.groupRepo.find({
+    where: { creatorId: userId },
+    relations: ['members'], 
+  });
+}
+
+
 }

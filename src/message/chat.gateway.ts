@@ -43,26 +43,35 @@ export class ChatGateway implements OnModuleInit {
     client.emit('receive_message_history', messages);
   }
 
-  @SubscribeMessage('send_message')
-  async handleSendMessage(@MessageBody() msg: any) {
-    const room = `assignment-${msg.assignmentId}`;
-    const message = {
-      senderId: msg.senderId,
-      message: msg.message,
-      sentAt: new Date().toISOString(),
-    };
+@SubscribeMessage('send_message')
+async handleSendMessage(@MessageBody() msg: any, @ConnectedSocket() client: Socket) {
+  const room = `assignment-${msg.assignmentId}`;
+  const user = await this.chatService.getUserById(msg.senderId);
 
-    await this.redis.rpush(`chat:${room}`, JSON.stringify(message));
-    await this.redis.expire(`chat:${room}`, 86400);
+  const message = {
+    senderId: msg.senderId,
+    senderName: user?.name ?? `User ${msg.senderId}`,
+    message: msg.message,
+    sentAt: new Date().toISOString(),
+  };
 
-    await this.chatService.saveMessage({
-      assignmentId: msg.assignmentId,
-      senderId: msg.senderId,
-      message: msg.message,
-    });
+  await this.redis.rpush(`chat:${room}`, JSON.stringify(message));
+  await this.redis.expire(`chat:${room}`, 86400);
 
-    this.server.to(room).emit('receive_message', message);
-  }
+  await this.chatService.saveMessage({
+    assignmentId: msg.assignmentId,
+    senderId: msg.senderId,
+    message: msg.message,
+  });
+
+  // Gửi tới tất cả TRỪ người gửi
+  client.broadcast.to(room).emit('receive_message', message);
+
+  // Gửi riêng lại cho người gửi
+  client.emit('receive_message', message);
+}
+
+
 
   // ===== group chat =====
   @SubscribeMessage('join_group')
@@ -78,29 +87,49 @@ export class ChatGateway implements OnModuleInit {
     client.emit('receive_group_history', messages);
   }
 
+
   @SubscribeMessage('send_group_message')
-  async handleSendGroupMessage(@MessageBody() msg: any) {
-    const room = `group-${msg.groupId}`;
-    const user = await this.chatService.getUserById(msg.senderId);
+async handleSendGroupMessage(@MessageBody() msg: any) {
+  const room = `group-${msg.groupId}`;
+  const user = await this.chatService.getUserById(msg.senderId);
 
-    const message = {
-      senderId: msg.senderId,
-      message: msg.message,
-      senderName: user?.name ?? `User ${msg.senderId}`,
-      sentAt: new Date().toISOString(),
-    };
+  const message = {
+    senderId: msg.senderId,
+    message: msg.message,
+    senderName: user?.name ?? `User ${msg.senderId}`,
+    sentAt: new Date().toISOString(),
+  };
 
-    await this.redis.rpush(`chat:${room}`, JSON.stringify(message));
-    await this.redis.expire(`chat:${room}`, 86400);
+  // Lưu vào Redis
+  await this.redis.rpush(`chat:${room}`, JSON.stringify(message));
+  await this.redis.expire(`chat:${room}`, 86400);
 
-    await this.chatService.saveMessage({
+  // Lưu vào DB
+  await this.chatService.saveMessage({
+    groupId: msg.groupId,
+    senderId: msg.senderId,
+    message: msg.message,
+  });
+
+
+  this.server.to(room).emit('receive_group_message', message);
+
+
+  const mentionedUserIds: number[] = msg.mentionedUserIds || [];
+
+  mentionedUserIds.forEach(userId => {
+    this.server.to(`user_${userId}`).emit('mentioned_notification', {
+      from: {
+        id: msg.senderId,
+        name: user?.name ?? `User ${msg.senderId}`,
+      },
       groupId: msg.groupId,
-      senderId: msg.senderId,
       message: msg.message,
+      sentAt: message.sentAt,
     });
+  });
+}
 
-    this.server.to(room).emit('receive_group_message', message);
-  }
 
   notifyNewGroup(group: any, memberIds: number[]) {
     for (const userId of memberIds) {
