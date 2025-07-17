@@ -27,7 +27,7 @@ export class TaskStatusLogService {
     note?: string; 
   }) {
     const log = this.logRepo.create({
-      task: { id: params.taskId },  // ✅ Chỉ dùng được trong method này
+      task: { id: params.taskId },  
       user: { id: params.userId },
       fromStatus: params.fromStatus,
       toStatus: params.toStatus,

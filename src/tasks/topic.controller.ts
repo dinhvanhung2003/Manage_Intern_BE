@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TopicDeadline } from './entities/topic-deadline';
 import { deadlineFileMulterOptions } from '../../uploads/deadline-upload';
+
 @Controller('topics')
 export class TopicsController {
   constructor(private readonly topicsService: TopicsService,
@@ -58,7 +59,8 @@ assignTasks(@Body() dto: AssignTasksToTopicDto) {
 //   });
 // }
 @Post(':id/deadlines')
-@UseInterceptors(FileInterceptor('file'))
+@UseInterceptors(FileInterceptor('file', deadlineFileMulterOptions))
+
 async addDeadlineToTopic(
   @Param('id', ParseIntPipe) topicId: number,
   @UploadedFile() file: any,
@@ -104,13 +106,13 @@ async getDeadlines(@Param('id', ParseIntPipe) topicId: number) {
 
 
 @Post('deadlines/:id/submit')
-@UseInterceptors(FileInterceptor('file'))
+@UseInterceptors(FileInterceptor('file', deadlineFileMulterOptions))
 async submitDeadline(
   @Param('id', ParseIntPipe) deadlineId: number,
   @UploadedFile() file: any,
   @Body() body: { submissionText: string }
 ) {
-  const fileUrl = file ? `uploads/${file.filename}` : undefined;
+  const fileUrl = file ? `uploads/deadlines/${file.filename}` : undefined;
   return this.topicsService.submitDeadline(deadlineId, {
     submissionText: body.submissionText,
     submissionFileUrl: fileUrl,

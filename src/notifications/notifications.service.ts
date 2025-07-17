@@ -69,6 +69,39 @@ export class NotificationsService {
 }
 
 
+async notifyUser(userId: number, payload: {
+  title: string;
+  body: string;
+  url?: string;
+  icon?: string;
+}) {
+  const subs = await this.getSubscriptionsByUser(userId);
+  if (!subs.length) {
+    console.warn(`❗ Không tìm thấy subscription cho user ${userId}`);
+    return;
+  }
+
+  const enrichedPayload = {
+    title: payload.title || 'Thông báo mới',
+    body: payload.body || '',
+    url: payload.url || '/dashboard/interns/my-tasks',
+    icon: payload.icon || '/icons/task-icon.png',
+  };
+
+  for (const { subscription } of subs) {
+    try {
+      await this.sendPushNotification(subscription, enrichedPayload);
+    } catch (error: any) {
+      console.error(` Gửi push thất bại cho user ${userId}:`, error);
+
+      // Nếu subscription không còn hợp lệ → xoá khỏi DB
+      if (error.statusCode === 410 || error.statusCode === 404) {
+        await this.pushRepo.delete({ subscription });
+        console.warn(` Subscription đã bị xoá vì không còn hợp lệ`);
+      }
+    }
+  }
+}
 
 
   async getSubscriptionsByUser(userId: number) {

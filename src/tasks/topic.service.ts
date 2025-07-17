@@ -71,7 +71,7 @@ export class TopicsService {
 async findByIntern(internId: number): Promise<Topic[]> {
   return this.topicRepo.find({
     where: { assignedTo: { id: internId } },
-    relations: ['assignedTo', 'createdBy'],
+    relations: ['assignedTo', 'createdBy', 'tasks'],
   });
 }
 async assignTasks(dto: AssignTasksToTopicDto): Promise<void> {
@@ -80,12 +80,13 @@ async assignTasks(dto: AssignTasksToTopicDto): Promise<void> {
   const topic = await this.topicRepo.findOne({ where: { id: topicId } });
   if (!topic) throw new NotFoundException('Topic not found');
 
-  await this.taskRepo
-    .createQueryBuilder()
-    .update()
-    .set({ topic })
-    .whereInIds(taskIds)
-    .execute();
+ await this.taskRepo
+  .createQueryBuilder()
+  .update(Task)
+  .set({ topic })
+  .whereInIds(taskIds)
+  .execute();
+
 }
 async createDeadlineForTopic(topicId: number, dto: {
   requirement: string;
@@ -94,7 +95,7 @@ async createDeadlineForTopic(topicId: number, dto: {
 }): Promise<TopicDeadline> {
   const topic = await this.topicRepo.findOne({
     where: { id: topicId },
-    relations: ['assignedTo'], // Đảm bảo lấy được intern của topic
+    relations: ['assignedTo'], 
   });
   if (!topic) throw new Error('Topic not found');
 
@@ -129,6 +130,13 @@ async createDeadlineForTopic(topicId: number, dto: {
       await this.notificationsService.sendPushNotification(subs[0].subscription, {
         title: 'Deadline mới',
         body: message,
+        url: '/dashboard/interns/my-tasks',  
+        icon: '/icons/task-icon.png',
+        badge: '/icons/badge.png'          
+    
+
+
+
       });
     }
   }
