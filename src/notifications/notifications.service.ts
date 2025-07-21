@@ -51,22 +51,25 @@ export class NotificationsService {
   const user = await this.userRepo.findOneBy({ id: userId });
   if (!user) throw new Error('Không tìm thấy người dùng');
 
-  
-  const existing = await this.pushRepo.findOne({
-    where: {
-      user: { id: userId },
-      subscription: { endpoint: subscription.endpoint }, 
-    } as any,
-  });
+  // Truy vấn thủ công với điều kiện JSON
+  const existing = await this.pushRepo
+    .createQueryBuilder('push')
+    .leftJoin('push.user', 'user')
+    .where('user.id = :userId', { userId })
+    .andWhere("push.subscription ->> 'endpoint' = :endpoint", {
+      endpoint: subscription.endpoint,
+    })
+    .getOne();
 
   if (existing) {
-    existing.subscription = subscription; 
+    existing.subscription = subscription;
     return this.pushRepo.save(existing);
   }
 
   const entity = this.pushRepo.create({ subscription, user });
   return this.pushRepo.save(entity);
 }
+
 
 
 async notifyUser(userId: number, payload: {

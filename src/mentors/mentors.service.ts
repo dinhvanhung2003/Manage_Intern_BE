@@ -37,30 +37,30 @@ export class MentorService {
     private readonly userRepo: Repository<User>,
     private readonly taskGateway: TaskGateway,
     private readonly notificationsService: NotificationsService,
-     private readonly taskStatusLogService: TaskStatusLogService,
+    private readonly taskStatusLogService: TaskStatusLogService,
   ) { }
 
-async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
-  const assignments = await this.assignmentRepo.find({
-    where: { mentor: { id: mentorId } },
-    relations: ['intern'],
-  });
+  async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
+    const assignments = await this.assignmentRepo.find({
+      where: { mentor: { id: mentorId } },
+      relations: ['intern'],
+    });
 
-  let interns = assignments.map((a) => a.intern as Intern); 
+    let interns = assignments.map((a) => a.intern as Intern);
 
-  function removeAccents(str: string): string {
-    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    function removeAccents(str: string): string {
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    if (search) {
+      const keyword = removeAccents(search);
+      interns = interns.filter((intern) =>
+        removeAccents(`${intern.name} ${intern.email} ${intern.school || ''}`).includes(keyword)
+      );
+    }
+
+    return interns;
   }
-
-  if (search) {
-    const keyword = removeAccents(search);
-    interns = interns.filter((intern) =>
-      removeAccents(`${intern.name} ${intern.email} ${intern.school || ''}`).includes(keyword)
-    );
-  }
-
-  return interns;
-}
 
 
   async assignTask(mentorId: number, dto: CreateTaskDto) {
@@ -91,13 +91,12 @@ async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
       await this.notificationsService.create(intern.id, message);
 
       // Gửi push notification
-      const subs = await this.notificationsService.getSubscriptionsByUser(intern.id);
-      if (subs.length > 0) {
-        await this.notificationsService.sendPushNotification(subs[0].subscription, {
-          title: 'Nhiệm vụ mới',
-          body: message,
-        });
-      }
+        await this.notificationsService.notifyUser(intern.id, {
+      title: 'Nhiệm vụ mới',
+      body: message,
+    });
+
+
     }
 
     return savedTask;
@@ -185,40 +184,40 @@ async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
 
 
   // Quản lý task 
- async getAllTasksCreatedByMentor(
-  mentorId: number,
-  title?: string,
-  page = 1,
-  limit = 10,
-  unassignedOnly = false,
-) {
-  const query = this.taskRepo
-    .createQueryBuilder('task')
-    .leftJoinAndSelect('task.assignedTo', 'intern')
-    .where('task.assignedById = :mentorId', { mentorId });
+  async getAllTasksCreatedByMentor(
+    mentorId: number,
+    title?: string,
+    page = 1,
+    limit = 10,
+    unassignedOnly = false,
+  ) {
+    const query = this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.assignedTo', 'intern')
+      .where('task.assignedById = :mentorId', { mentorId });
 
-  if (title) {
-    query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
+    if (title) {
+      query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
+    }
+
+    if (unassignedOnly) {
+      query.andWhere('task."assignedToId" IS NULL');
+    }
+
+    const [data, total] = await query
+      .orderBy('task.dueDate', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
-
-  if (unassignedOnly) {
-  query.andWhere('task."assignedToId" IS NULL'); 
-}
-
-  const [data, total] = await query
-    .orderBy('task.dueDate', 'ASC')
-    .skip((page - 1) * limit)
-    .take(limit)
-    .getManyAndCount();
-
-  return {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
 
 
 
@@ -378,47 +377,47 @@ async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
     task.assignedTo = { id: internId } as any;
     return await this.taskRepo.save(task);
   }
-// Cập nhật trạng thái task từ mentor
-async updateTaskStatusByMentor(taskId: number, mentorId: number, newStatus: TaskStatus,note?: string,) {
-  const task = await this.taskRepo.findOne({
-    where: { id: taskId, assignedBy: { id: mentorId } },
-     relations: ['assignedTo'],
-  });
+  // Cập nhật trạng thái task từ mentor
+  async updateTaskStatusByMentor(taskId: number, mentorId: number, newStatus: TaskStatus, note?: string,) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId, assignedBy: { id: mentorId } },
+      relations: ['assignedTo'],
+    });
 
-  if (!task) {
-    throw new NotFoundException('Task không tồn tại hoặc không thuộc quyền của bạn');
+    if (!task) {
+      throw new NotFoundException('Task không tồn tại hoặc không thuộc quyền của bạn');
+    }
+
+    const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
+      [TaskStatus.ASSIGNED]: [],
+      [TaskStatus.IN_PROGRESS]: [TaskStatus.ERROR],
+      [TaskStatus.ERROR]: [TaskStatus.ASSIGNED],
+      [TaskStatus.COMPLETED]: [TaskStatus.ASSIGNED],
+    };
+
+    const validTargets = allowedTransitions[task.status];
+    if (!validTargets.includes(newStatus)) {
+      throw new ForbiddenException(`Không thể chuyển trạng thái từ ${task.status} sang ${newStatus}`);
+    }
+
+    const fromStatus = task.status; //  khai báo 
+    task.status = newStatus;
+    const internInfo = task.assignedTo
+      ? `Intern #${task.assignedTo.id} (${task.assignedTo.name || task.assignedTo.email})`
+      : 'Intern không xác định';
+    //  Ghi log
+    await this.taskStatusLogService.createLog({
+      taskId: task.id,
+      userId: mentorId,
+      fromStatus,
+      toStatus: newStatus,
+      note: note,
+      message: `Mentor #${mentorId} cập nhật trạng thái cho ${internInfo}: từ "${STATUS_LABELS[fromStatus]}" sang "${STATUS_LABELS[newStatus]}"`,
+      fileUrl: task.submittedFile || '',
+    });
+
+    return this.taskRepo.save(task);
   }
-
-  const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
-    [TaskStatus.ASSIGNED]: [],
-    [TaskStatus.IN_PROGRESS]: [TaskStatus.ERROR],
-    [TaskStatus.ERROR]: [TaskStatus.ASSIGNED],
-    [TaskStatus.COMPLETED]: [TaskStatus.ASSIGNED],
-  };
-
-  const validTargets = allowedTransitions[task.status];
-  if (!validTargets.includes(newStatus)) {
-    throw new ForbiddenException(`Không thể chuyển trạng thái từ ${task.status} sang ${newStatus}`);
-  }
-
-  const fromStatus = task.status; //  khai báo 
-  task.status = newStatus;
-const internInfo = task.assignedTo
-  ? `Intern #${task.assignedTo.id} (${task.assignedTo.name || task.assignedTo.email})`
-  : 'Intern không xác định';
-  //  Ghi log
-  await this.taskStatusLogService.createLog({
-    taskId: task.id,
-    userId: mentorId, 
-    fromStatus,
-    toStatus: newStatus,
-    note: note,
-    message: `Mentor #${mentorId} cập nhật trạng thái cho ${internInfo}: từ "${STATUS_LABELS[fromStatus]}" sang "${STATUS_LABELS[newStatus]}"`,
-    fileUrl: task.submittedFile || '',
-  });
-
-  return this.taskRepo.save(task);
-}
 
 
 }
