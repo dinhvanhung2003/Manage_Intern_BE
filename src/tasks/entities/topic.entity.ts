@@ -1,8 +1,9 @@
 // topic.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne,ManyToMany } from 'typeorm';
 import { Task } from '../../tasks/entities/task.entity';
 import { User } from '../../users/user.entity';
 import { TopicDeadline } from './topic-deadline';
+import { Document } from '../../tasks/entities/document.entity';
 @Entity()
 export class Topic {
   @PrimaryGeneratedColumn()
@@ -28,5 +29,7 @@ export class Topic {
   // topic.entity.ts
 @OneToMany(() => TopicDeadline, (deadline) => deadline.topic)
 deadlines: TopicDeadline[];
+@ManyToMany(() => Document, (doc) => doc.sharedWithTopics)
+documents: Document[];
 
 }

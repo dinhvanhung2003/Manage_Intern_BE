@@ -11,7 +11,7 @@ import {
 import { TaskStatusLog } from '../tasks/entities/task.log';
 import { BaseSoftDeleteEntity } from '../common/entities/base-soft-delete.entity';
 import { ChatGroup } from '../message/entities/chat-group.entity';
-
+import { Document } from '../tasks/entities/document.entity';
 export enum UserRole {
   ADMIN = 'admin',
   INTERN = 'intern',
@@ -66,4 +66,8 @@ export class User extends BaseSoftDeleteEntity {
 statusLogs: TaskStatusLog[];
 @ManyToMany(() => ChatGroup, group => group.members)
 groups: ChatGroup[];
+@OneToMany(() => Document, (doc) => doc.uploadedBy)
+uploadedDocuments: Document[];
+
+
 }

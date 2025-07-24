@@ -16,23 +16,29 @@ import {TopicDeadline} from './entities/topic-deadline';
 import { TopicGateway } from './topic.gateway';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { MulterModule } from '@nestjs/platform-express';
+import {Document} from './entities/document.entity';
+import { DocumentsController } from './documents.controller';
+import { DocumentsService } from './documents.service';
+import { DocumentFile } from './entities/document-file';
 import { join } from 'path';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskImage, TaskStatusLog,Topic,User,TopicDeadline]), 
+    TypeOrmModule.forFeature([Task, TaskImage, TaskStatusLog,Topic,User,TopicDeadline,Document,DocumentFile]), 
     NotificationsModule,
     
   ],
   controllers: [
     TasksController,
     TaskStatusLogController, 
-    TopicsController
+    TopicsController,
+    DocumentsController
   ],
   providers: [
     TaskService,
     TaskStatusLogService, 
     TopicsService,
-    TopicGateway
+    TopicGateway,
+    DocumentsService
   ],
   exports: [TypeOrmModule,TaskStatusLogService],
 

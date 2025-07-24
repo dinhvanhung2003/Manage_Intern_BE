@@ -32,6 +32,8 @@ import * as redisStore from 'cache-manager-ioredis';
 import { ChatGroup } from './message/entities/chat-group.entity';
 import {Topic} from './tasks/entities/topic.entity';
 import {TopicDeadline} from './tasks/entities/topic-deadline';
+import {Document} from './tasks/entities/document.entity';
+import { DocumentFile } from './tasks/entities/document-file';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -42,7 +44,7 @@ import {TopicDeadline} from './tasks/entities/topic-deadline';
       password: 'Hung12122003',
       database: 'manage_intern',
       entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage,TaskStatusLog,ChatGroup,Topic,TopicDeadline
-        
+        ,Document,DocumentFile
       ],
       synchronize: true,
     }),

@@ -11,7 +11,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TopicDeadline } from './entities/topic-deadline';
 import { deadlineFileMulterOptions } from '../../uploads/deadline-upload';
-
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
+import { RolesGuard } from '../auth/roles.guard';
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('topics')
 export class TopicsController {
   constructor(private readonly topicsService: TopicsService,
