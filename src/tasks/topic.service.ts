@@ -11,6 +11,7 @@ import { TopicDeadline } from './entities/topic-deadline';
 import { TaskGateway } from '../mentors/task.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TopicGateway } from './topic.gateway';
+import { IsNull } from 'typeorm';
 @Injectable()
 export class TopicsService {
     constructor(
@@ -26,25 +27,29 @@ export class TopicsService {
         private readonly notificationsService: NotificationsService,
     ) { }
 
-   async create(dto: CreateTopicDto): Promise<Topic> {
+async create(dto: CreateTopicDto): Promise<Topic> {
   const createdBy = await this.userRepo.findOneBy({ id: dto.createdById });
   if (!createdBy) throw new Error('Mentor not found');
 
-  const assignedTo = dto.assignedToId
-    ? await this.userRepo.findOneBy({ id: dto.assignedToId })
-    : undefined;
+ let assignedTo: User | null = null;
 
-  const topicData: Partial<Topic> = {
-    title: dto.title,
-    description: dto.description,
-    dueDate: dto.dueDate,
-    createdBy,
-    ...(assignedTo && { assignedTo }),
-  };
+  if (dto.assignedToId) {
+    assignedTo = await this.userRepo.findOneBy({ id: dto.assignedToId });
+    if (!assignedTo) throw new Error('Intern not found');
+  }
 
-  const topic = this.topicRepo.create(topicData);
-  return await this.topicRepo.save(topic); 
+ const topic = this.topicRepo.create({
+  title: dto.title,
+  description: dto.description,
+  dueDate: dto.dueDate,
+  createdBy,
+  ...(assignedTo ? { assignedTo } : {}),
+});
+
+
+  return await this.topicRepo.save(topic);
 }
+
 
 
 
@@ -95,7 +100,7 @@ async createDeadlineForTopic(topicId: number, dto: {
 }): Promise<TopicDeadline> {
   const topic = await this.topicRepo.findOne({
     where: { id: topicId },
-    relations: ['assignedTo'], 
+    relations: ['assignedTo'],
   });
   if (!topic) throw new Error('Topic not found');
 
@@ -106,43 +111,66 @@ async createDeadlineForTopic(topicId: number, dto: {
 
   const savedDeadline = await this.deadlineRepo.save(deadline);
 
-  // ===== THÔNG BÁO =====
-  const intern = topic.assignedTo;
-  if (intern) {
-    const message = `Bạn vừa được giao deadline mới trong topic "${topic.title}"`;
+  const internIds: number[] = [];
 
-    // Gửi socket real-time nếu online
-   await this.topicGateway.sendDeadlineAssigned(intern.id, {
-  id: savedDeadline.id,
-  requirement: dto.requirement,
-  deadline: dto.deadline,
-  topicId: topic.id,
-  topicTitle: topic.title,
-});
+  if (topic.assignedTo) {
+    // Topic riêng – 1 intern
+    internIds.push(topic.assignedTo.id);
+  } else {
+    // Topic chung – tìm intern từ các task
+    const raw = await this.taskRepo
+      .createQueryBuilder('task')
+      .select('DISTINCT task.assignedToId', 'internId')
+      .where('task.topicId = :topicId', { topicId })
+      .andWhere('task.assignedToId IS NOT NULL')
+      .getRawMany();
 
+    raw.forEach(r => internIds.push(r.internId));
+  }
 
-    // Lưu thông báo trong DB
-    await this.notificationsService.create(intern.id, message);
+  const notifyPayload = {
+    id: savedDeadline.id,
+    requirement: dto.requirement,
+    deadline: dto.deadline,
+    topicId: topic.id,
+    topicTitle: topic.title,
+  };
 
-    // Gửi push notification nếu có đăng ký
-    const subs = await this.notificationsService.getSubscriptionsByUser(intern.id);
-    if (subs.length > 0) {
-      await this.notificationsService.sendPushNotification(subs[0].subscription, {
-        title: 'Deadline mới',
-        body: message,
-        url: '/dashboard/interns/my-tasks',  
-        icon: '/icons/task-icon.png',
-        badge: '/icons/badge.png'          
-    
+  const message = `Bạn vừa được giao deadline mới trong topic "${topic.title}"`;
 
+  for (const internId of internIds) {
+    // 1. Gửi socket
+    await this.topicGateway.sendDeadlineAssigned(internId, notifyPayload);
 
+    // 2. Lưu DB
+    await this.notificationsService.create(internId, message);
 
-      });
+    // 3. Gửi push nếu có đăng ký
+    const subs = await this.notificationsService.getSubscriptionsByUser(internId);
+    for (const { subscription, id: subId } of subs) {
+      try {
+        await this.notificationsService.sendPushNotification(subscription, {
+          title: 'Deadline mới',
+          body: message,
+          url: '/dashboard/interns/my-tasks',
+          icon: '/icons/task-icon.png',
+          badge: '/icons/badge.png',
+        });
+      } catch (err) {
+        // Nếu bị lỗi 410 (expired/unsubscribed) thì xóa
+        if (err.statusCode === 410 || err.body?.includes('unsubscribed')) {
+          // await this.notificationsService.deleteSubscription(subId);
+          console.warn(`Removed expired push subscription for user ${internId}`);
+        } else {
+          console.error(`Push failed for user ${internId}`, err);
+        }
+      }
     }
   }
 
   return savedDeadline;
 }
+
 
 
   async submitDeadline(deadlineId: number, data: {
@@ -158,5 +186,19 @@ async createDeadlineForTopic(topicId: number, dto: {
 
   return this.deadlineRepo.save(deadline);
 }
+// topic chung 
+async getAllSharedTopics(userId: number): Promise<Topic[]> {
+  console.log('Fetching all shared topics for user:', userId);
+  return this.topicRepo.find({
+    where: {
+      assignedTo: IsNull(),
+      createdBy: { id: userId },
+    },
+    relations: ['createdBy', 'tasks'],
+    order: { id: 'DESC' },
+  });
+}
+
+
 
 }

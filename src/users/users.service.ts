@@ -52,25 +52,25 @@ export class UsersService {
   //message queue 
 
   async seedUsers() {
-    for (let i = 0; i < 100; i++) {
-      await userQueue.add('create', {
-        name: `Mentor ${i}`,
-        email: `mentor${i}@mail.com`,
-        type: 'mentor',
-      });
-    }
+    // for (let i = 0; i < 100; i++) {
+    //   await userQueue.add('create', {
+    //     name: `Mentor ${i}`,
+    //     email: `mentor${i}@mail.com`,
+    //     type: 'mentor',
+    //   });
+    // }
 
     for (let i = 0; i < 1000; i++) {
-      const mentorId = Math.floor(Math.random() * 100) + 1;
+      // const mentorId = Math.floor(Math.random() * 100) + 1;
       await userQueue.add('create', {
         name: `Intern ${i}`,
         email: `intern${i}@mail.com`,
         type: 'intern',
-        mentorId,
+        mentorId: 71,
       });
     }
 
-    return { message: 'Seeded 100 mentors & 1000 interns to queue' };
+    return { message: 'Seeded 3000 interns to queue' };
   }
 
 

@@ -3,7 +3,8 @@ import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Post } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
-
+import { Request } from 'express';
+import { Body, Delete } from '@nestjs/common';
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
@@ -27,4 +28,11 @@ export class NotificationsController {
     const subscription = (req as any).body;
     return this.service.saveSubscription(user.sub, subscription);
   }
+  @Delete('remove-subscription')
+async removeSubscription(@Req() req, @Body() body: { endpoint: string }) {
+  if (!body.endpoint) {
+    throw new Error('Thiếu endpoint');
+  }
+  return this.service.removeSubscription(req.user.sub, body.endpoint);
+}
 }

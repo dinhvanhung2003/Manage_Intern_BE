@@ -6,6 +6,8 @@ import { DeleteDateColumn } from 'typeorm/decorator/columns/DeleteDateColumn';
 import { BaseSoftDeleteEntity } from '../../common/entities/base-soft-delete.entity';
 import { TaskStatusLog } from './task.log';
 import { Topic } from './topic.entity';
+import { ManyToMany, JoinTable } from 'typeorm';
+import { Document } from './document.entity';
 export enum TaskStatus {
   ASSIGNED = 'assigned',        // Mới khởi tạo (chưa nhận)
   IN_PROGRESS = 'in_progress',  // Đang xử lý
@@ -50,4 +52,7 @@ submittedFile?: string;
 statusLogs: TaskStatusLog[];
 @ManyToOne(() => Topic, (topic) => topic.tasks)
 topic: Topic;
+@ManyToMany(() => Document, (document) => document.sharedWithTasks)
+@JoinTable()
+sharedDocuments: Document[];
 }

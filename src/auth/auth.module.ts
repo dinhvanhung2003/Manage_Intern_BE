@@ -18,7 +18,7 @@ import {Intern} from '../users/user.intern';
       Intern,]),
     JwtModule.register({
       secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
-      signOptions: { expiresIn: '10m' },
+      signOptions: { expiresIn: '30m' },
     }),
     
   ],

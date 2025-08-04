@@ -74,6 +74,8 @@ export class InternsService {
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.assignedTo', 'assignedTo')
       .leftJoinAndSelect('task.assignedBy', 'assignedBy')
+          .leftJoinAndSelect('task.sharedDocuments', 'sharedDocuments')
+    .leftJoinAndSelect('sharedDocuments.files', 'files')
       .where('assignedTo.id = :internId', { internId });
 
     if (search) {

@@ -7,6 +7,7 @@ import {
   OneToMany,
   JoinTable,
   ManyToMany,
+  JoinColumn
 } from 'typeorm';
 import { User } from '../../users/user.entity';
 import { Topic } from '../entities/topic.entity';
@@ -33,7 +34,7 @@ export class Document {
   })
   type: DocumentType;
 
-  @ManyToOne(() => User, (user) => user.uploadedDocuments)
+  @ManyToOne(() => User, (user) => user.uploadedDocuments, { eager: false })
   uploadedBy: User;
 
   @CreateDateColumn()
@@ -62,7 +63,10 @@ export class Document {
   @JoinTable()
   sharedWithTopics: Topic[];
 
-  @ManyToMany(() => Task)
-  @JoinTable()
+   @ManyToMany(() => Task, (task) => task.sharedDocuments)
   sharedWithTasks: Task[];
+  
+
+  
+
 }

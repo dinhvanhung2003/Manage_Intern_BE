@@ -14,6 +14,8 @@ import { deadlineFileMulterOptions } from '../../uploads/deadline-upload';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { RolesGuard } from '../auth/roles.guard';
+import { ReqUser } from '../auth/req-user.decorators';
+import { User } from '../users/user.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('topics')
 export class TopicsController {
@@ -32,6 +34,10 @@ export class TopicsController {
   findAll(): Promise<Topic[]> {
     return this.topicsService.findAll();
   }
+@Get('/shared')
+getAllSharedTopics(@ReqUser() user): Promise<Topic[]> {
+  return this.topicsService.getAllSharedTopics(user.sub);
+}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Topic> {
@@ -81,22 +87,6 @@ async addDeadlineToTopic(
 }
 
 
-// @Post(':id/deadlines')
-// @UseInterceptors(FileInterceptor('file', deadlineFileMulterOptions))
-// async addDeadlineToTopic(
-//   @Param('id', ParseIntPipe) topicId: number,
-//   @UploadedFile() file: any,
-//   @Body() body: { requirement: string; deadline: string }
-// ) {
-//   const fileUrl = file ? `uploads/deadlines/${file.filename}` : undefined;
-
-//   return this.topicsService.createDeadlineForTopic(topicId, {
-//     requirement: body.requirement,
-//     deadline: new Date(body.deadline),
-//     fileUrl,
-//   });
-// }
-
 @Get(':id/deadlines')
 async getDeadlines(@Param('id', ParseIntPipe) topicId: number) {
   const topic = await this.topicRepo.findOne({
@@ -121,5 +111,6 @@ async submitDeadline(
     submissionFileUrl: fileUrl,
   });
 }
+
 
 }

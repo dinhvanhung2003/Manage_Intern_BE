@@ -3,4 +3,5 @@ export class CreateTaskDto {
   description: string;
   dueDate: string;
   assignedTo?: number;
+  documentIds?: number[];
 }

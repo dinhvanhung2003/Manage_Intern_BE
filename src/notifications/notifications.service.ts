@@ -124,5 +124,16 @@ async notifyUser(userId: number, payload: {
       console.error('Gửi push thất bại:', error);
     }
   }
+async removeSubscription(userId: number, endpoint: string) {
+  // Xoá subscription dựa trên endpoint và userId
+  await this.pushRepo
+    .createQueryBuilder()
+    .delete()
+    .where("subscription ->> 'endpoint' = :endpoint", { endpoint })
+    .andWhere("userId = :userId", { userId })
+    .execute();
+
+  return { message: 'Subscription đã được xoá' };
+}
 
 }

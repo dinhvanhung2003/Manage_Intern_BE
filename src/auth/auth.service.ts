@@ -8,6 +8,7 @@ import { ConflictException, InternalServerErrorException } from '@nestjs/common'
 import { Mentor } from '../users/user.mentor';
 import { Intern } from '../users/user.intern';
 import { Admin } from '../users/user.admin';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -61,74 +62,61 @@ export class AuthService {
     }
   }
 
-  async login(email: string, password: string) {
-    const user = await this.userRepo.findOne({
-      where: { email },
-    })
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      type: user.constructor.name.toLowerCase(),
-    };
-
-    const accessToken = this.jwtService.sign(
-      { sub: user.id, email: user.email, type: (user as any).type || user.constructor.name.toLowerCase(), tokenType: 'access', },
-      {
-        expiresIn: '10m',
-        secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
-      },
-    );
-
-    const refreshToken = this.jwtService.sign(
-      {
-        sub: user.id, email: user.email, type: (user as any).type || user.constructor.name.toLowerCase(),
-        tokenType: 'refresh',
-      },
-      {
-        expiresIn: '7d',
-        secret: process.env.JWT_REFRESH_SECRET || 'refreshSecret',
-      },
-    );
-
-
-    console.log('ACCESS:', process.env.JWT_ACCESS_SECRET);
-    console.log('REFRESH:', process.env.JWT_REFRESH_SECRET);
-    await this.userRepo.update(user.id, {
-      refreshToken: await bcrypt.hash(refreshToken, 10),
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+async login(email: string, password: string) {
+  const user = await this.userRepo.findOne({ where: { email } });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    throw new UnauthorizedException('Invalid credentials');
   }
-  async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.userRepo.findOneBy({ id: userId });
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
 
-    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isMatch) {
-      throw new UnauthorizedException('Refresh token mismatch');
-    }
+  const payload = {
+    sub: user.id,
+    email: user.email,
+    type: user.constructor.name.toLowerCase(),
+  };
 
-    const payload = { sub: user.id, email: user.email, type: user.constructor.name.toLowerCase(), };
+  const accessToken = this.jwtService.sign(
+    { ...payload, tokenType: 'access' },
+    { expiresIn: '30m', secret: process.env.JWT_ACCESS_SECRET || 'accessSecret' },
+  );
 
-    const newAccessToken = this.jwtService.sign(payload, {
-      expiresIn: '10m',
-      secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
-    });
+  const refreshToken = this.jwtService.sign(
+    { ...payload, tokenType: 'refresh' },
+    { expiresIn: '7d', secret: process.env.JWT_REFRESH_SECRET || 'refreshSecret' },
+  );
 
-    return {
-      accessToken: newAccessToken,
-      // refreshToken,
-    };
+  await this.userRepo.update(user.id, {
+    refreshToken: await bcrypt.hash(refreshToken, 10),
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    user: { id: user.id, email: user.email }, // trả thông tin user
+  };
+}
+
+
+ async refreshTokens(userId: number, refreshToken: string) {
+  const user = await this.userRepo.findOneBy({ id: userId });
+  if (!user || !user.refreshToken) {
+    throw new UnauthorizedException('Invalid refresh token');
   }
+
+  const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+  if (!isMatch) {
+    throw new UnauthorizedException('Refresh token mismatch');
+  }
+
+  const payload = { sub: user.id, email: user.email, type: user.constructor.name.toLowerCase() };
+
+  const newAccessToken = this.jwtService.sign(payload, {
+    expiresIn: '1m',
+    secret: process.env.JWT_ACCESS_SECRET || 'accessSecret',
+  });
+
+  return { accessToken: newAccessToken };
+}
+
   async getProfile(userId: number) {
     return this.userRepo.findOneBy({ id: userId });
   }
@@ -147,6 +135,21 @@ export class AuthService {
     const user = await this.userRepo.findOne({ where: { email } });
     return !!user;
   }
+
+
+  // auth.service.ts
+
+
+  async invalidateRefreshToken(userId: number) {
+  await this.userRepo.update(
+    { id: userId },
+    { refreshToken: null }
+  );
+}
+
+
+
+
 
 }
 

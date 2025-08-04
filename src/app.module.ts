@@ -34,6 +34,7 @@ import {Topic} from './tasks/entities/topic.entity';
 import {TopicDeadline} from './tasks/entities/topic-deadline';
 import {Document} from './tasks/entities/document.entity';
 import { DocumentFile } from './tasks/entities/document-file';
+import { SeedController } from './common/controllers/seed-task-topic-common.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -75,7 +76,7 @@ import { DocumentFile } from './tasks/entities/document-file';
     HttpModule
     
   ],
-  controllers: [AppController,CommonController],
+  controllers: [AppController,CommonController,SeedController],
   providers: [AppService],
 })
 export class AppModule { }

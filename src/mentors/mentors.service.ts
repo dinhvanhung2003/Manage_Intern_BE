@@ -9,7 +9,6 @@ import { Task } from '../tasks/entities/task.entity';
 import { TaskStatus } from '../tasks/entities/task.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { taskQueue } from '../queues/user.queue';
-import { BulkJobOptions } from 'bullmq';
 import { Not, IsNull } from 'typeorm';
 import { TaskGateway } from './task.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -18,6 +17,8 @@ import { join } from 'path';
 import { BadRequestException } from '@nestjs/common';
 import { Intern } from '../users/user.intern';
 import { TaskStatusLogService } from '../tasks/task-status-log.service';
+import {Document} from '../tasks/entities/document.entity'
+import { In } from 'typeorm';
 const STATUS_LABELS: Record<string, string> = {
   assigned: 'Chưa nhận',
   in_progress: 'Đang làm',
@@ -38,6 +39,8 @@ export class MentorService {
     private readonly taskGateway: TaskGateway,
     private readonly notificationsService: NotificationsService,
     private readonly taskStatusLogService: TaskStatusLogService,
+    @InjectRepository(Document)
+    private readonly documentRepo: Repository<Document>,
   ) { }
 
   async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
@@ -80,6 +83,22 @@ export class MentorService {
     });
 
     const savedTask = await this.taskRepo.save(task);
+if (dto.documentIds && dto.documentIds.length > 0) {
+    const documents = await this.documentRepo.find({
+  where: { id: In(dto.documentIds) },
+  relations: ['sharedWithTasks'],
+});
+
+
+    for (const doc of documents) {
+      // Tránh duplicate
+      const exists = doc.sharedWithTasks?.some(t => t.id === savedTask.id);
+      if (!exists) {
+        doc.sharedWithTasks = [...(doc.sharedWithTasks || []), savedTask];
+        await this.documentRepo.save(doc);
+      }
+    }
+  }
 
     if (intern) {
       const message = `Bạn vừa được giao task: ${savedTask.title}`;
@@ -95,7 +114,7 @@ export class MentorService {
       title: 'Nhiệm vụ mới',
       body: message,
     });
-
+    
 
     }
 
@@ -192,9 +211,12 @@ export class MentorService {
     unassignedOnly = false,
   ) {
     const query = this.taskRepo
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.assignedTo', 'intern')
-      .where('task.assignedById = :mentorId', { mentorId });
+  .createQueryBuilder('task')
+  .leftJoinAndSelect('task.assignedTo', 'intern')
+  .leftJoinAndSelect('task.sharedDocuments', 'sharedDocuments')
+  .leftJoinAndSelect('sharedDocuments.files', 'files')
+  .where('task.assignedById = :mentorId', { mentorId });
+
 
     if (title) {
       query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
@@ -219,6 +241,18 @@ export class MentorService {
     };
   }
 
+
+async getTasksAssignedWithoutTopic(mentorId: number) {
+  return this.taskRepo.find({
+    where: {
+      assignedBy: { id: mentorId },
+      assignedTo: Not(IsNull()),
+      topic: IsNull(),
+    },
+    relations: ['assignedTo'],
+    order: { id: 'DESC' },
+  });
+}
 
 
 

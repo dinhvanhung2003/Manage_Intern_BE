@@ -42,8 +42,9 @@ export class User extends BaseSoftDeleteEntity {
   @Column({ nullable: true })
   bio: string;
 
-  @Column({ nullable: true })
-  refreshToken?: string;
+ @Column({ type: 'text', nullable: true })
+refreshToken?: string | null;
+
 // type?: string;
   // quan hệ mentor và intern
 

@@ -23,11 +23,11 @@ async upload(dto: CreateDocumentDto, files: any[], user: any): Promise<Document>
   if (!dto.type) throw new BadRequestException('Missing type');
   console.log('DTO TYPE:', dto.type);
   console.log('FILES:', files);
-
+  console.log('USER:', user);
   const document = this.documentRepo.create({
     title: dto.title,
     description: dto.description,
-  uploadedBy: { id: user.sub } as User,
+  uploadedBy: { id: user.id},
 
     status: DocumentStatus.PENDING,
     type: dto.type,
@@ -109,11 +109,13 @@ console.log('🔍 Current User:', user);
     return this.documentRepo.save(doc);
   }
 
-  async findByUploader(userId: number) {
-    return this.documentRepo.find({
-      where: { uploadedBy: { id: userId } },
-      relations: ['approvedBy', 'files'],
-      order: { uploadedAt: 'DESC' },
-    });
-  }
+ async findByUploader(userId: number) {
+  console.log('Finding documents for user ID:', userId);
+  return this.documentRepo.find({
+    where: { uploadedBy: { id: userId } }, 
+    relations: ['uploadedBy', 'approvedBy', 'files'],
+    order: { uploadedAt: 'DESC' },
+  });
+}
+
 }

@@ -30,7 +30,7 @@ async getMyInterns(
 @Patch('tasks/:id/status')
 async mentorUpdateTaskStatus(
   @Param('id') id: number,
-  @Body() body: UpdateTaskStatusDto, // ✅ dùng DTO
+  @Body() body: UpdateTaskStatusDto, 
   @Req() req: Request,
 ) {
   const mentorId = (req.user as any).sub;
@@ -86,7 +86,12 @@ async getAllMyTasks(
      unassignedOnly === 'true',
   );
 }
-
+// danh sách task để gán cho topic
+@Get('tasks/assigned-no-topic')
+async getAssignedTasksWithoutTopic(@Req() req: Request) {
+  const mentorId = (req.user as any).sub;
+  return this.mentorService.getTasksAssignedWithoutTopic(mentorId);
+}
 
 
   @HttpCode(204)

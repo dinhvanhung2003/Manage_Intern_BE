@@ -17,5 +17,5 @@ export class CreateTopicDto {
 
   @IsOptional()
   @IsNumber()
-  assignedToId?: number;
+  assignedToId?: number | null;
 }

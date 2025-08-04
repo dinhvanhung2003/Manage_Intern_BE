@@ -67,8 +67,8 @@ async rejectDoc(@Param('id', ParseIntPipe) id: number) {
 //   return this.documentsService.approve(id, admin);
 // }
   @Get('my')
-async getMyDocuments(@ReqUser() user: User) {
-  return this.documentsService.findByUploader(user.id);
+async getMyDocuments(@ReqUser() user) {
+  return this.documentsService.findByUploader(user.sub);
 }
 
 
