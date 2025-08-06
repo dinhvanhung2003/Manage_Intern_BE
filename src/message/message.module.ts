@@ -3,13 +3,13 @@ import { MessageController } from './message.controller';
 import { ChatService } from './message.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
-import { InternAssignment } from '../admin/entities/user.assign';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
 import { ChatGateway } from './chat.gateway';
 import { RedisClientProvider } from './redis.provider'; 
 import { ChatSyncService } from './message.sync'; 
 import { ChatGroup } from './entities/chat-group.entity';
 import { ChatGroupController } from './chat-group.controller';
-import { User } from '../users/user.entity'; 
+import { User } from '../users/entities/user.entity'; 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Message, InternAssignment,ChatGroup,User]),

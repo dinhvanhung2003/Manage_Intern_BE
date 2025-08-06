@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Document } from './entities/document.entity';
-import { DocumentFile } from './entities/document-file';
-import { CreateDocumentDto } from './dtos/CreateDocumentDTO';
-import { User } from '../users/user.entity';
-import { DocumentStatus } from './entities/constants/document-status';
+import { Document } from '../entities/document.entity';
+import { DocumentFile } from '../entities/document-file.entity';
+import { CreateDocumentDto } from '../dtos/CreateDocumentDTO';
+import { User } from '../../users/entities/user.entity';
+import { DocumentStatus } from '../entities/constants/document-status';
 import { BadRequestException } from '@nestjs/common/exceptions/bad-request.exception';
-import { DocumentType } from './entities/constants/document-type';
+import { DocumentType } from '../entities/constants/document-type';
 @Injectable()
 export class DocumentsService {
   constructor(
@@ -27,7 +27,7 @@ async upload(dto: CreateDocumentDto, files: any[], user: any): Promise<Document>
   const document = this.documentRepo.create({
     title: dto.title,
     description: dto.description,
-  uploadedBy: { id: user.id},
+  uploadedBy: { id: user.sub},
 
     status: DocumentStatus.PENDING,
     type: dto.type,

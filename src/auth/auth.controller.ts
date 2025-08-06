@@ -1,7 +1,7 @@
 // auth/auth.controller.ts
 import { Body, Controller, Post, Req, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UserRole } from '../users/user.entity';
+import { UserRole } from '../users/entities/user.entity';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Request } from 'express';
 import { UnauthorizedException } from '@nestjs/common';
@@ -11,10 +11,13 @@ import { Query } from '@nestjs/common';
 import { CreateUserDto } from './dto/RegisterDTO';
 import * as jwt from 'jsonwebtoken';
 import { HttpStatus } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
-
+  constructor(private authService: AuthService,
+              private notificationService: NotificationsService) { }
+  
+  
   @Post('register')
   register(@Body() body: CreateUserDto) {
     return this.authService.register(body.email, body.password, body.type);
@@ -114,18 +117,26 @@ async refresh(
   }
 
 
- @Post('logout')
-async logout(@Req() req, @Res() res: Response) {
-  const userId = req.user?.id; 
+@Post('logout')
+async logout(@Req() req, @Res() res: Response, @Body() body: { endpoint?: string }) {
+  const userId = req.user?.id || req.user?.sub; 
+
   if (userId) {
     // Xóa refresh token trong DB
     await this.authService.invalidateRefreshToken(userId);
+
+    // Nếu có endpoint push, xóa subscription
+    if (body.endpoint) {
+      await this.notificationService.removeSubscription(userId, body.endpoint);
+    }
   }
- res.cookie('accessToken', '', {
+
+  // Xóa cookie accessToken và refreshToken
+  res.cookie('accessToken', '', {
     httpOnly: true,
-    secure: false, // nếu dùng HTTPS
+    secure: false, // nếu dùng HTTPS thì đặt true
     sameSite: 'strict',
-    expires: new Date(0), // hết hạn ngay lập tức
+    expires: new Date(0),
   });
 
   res.cookie('refreshToken', '', {
@@ -137,6 +148,7 @@ async logout(@Req() req, @Res() res: Response) {
 
   return res.status(HttpStatus.OK).json({ message: 'Logged out' });
 }
+
 
 
 }

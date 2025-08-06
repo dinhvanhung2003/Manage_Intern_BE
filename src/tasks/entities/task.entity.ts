@@ -1,10 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../../users/user.entity';
-import { TaskImage } from './task.image';
+import { User } from '../../users/entities/user.entity';
+import { TaskImage } from './task.image.entity';
 import { OneToMany } from 'typeorm';
 import { DeleteDateColumn } from 'typeorm/decorator/columns/DeleteDateColumn';
 import { BaseSoftDeleteEntity } from '../../common/entities/base-soft-delete.entity';
-import { TaskStatusLog } from './task.log';
+import { TaskStatusLog } from './task.log.enity';
 import { Topic } from './topic.entity';
 import { ManyToMany, JoinTable } from 'typeorm';
 import { Document } from './document.entity';
@@ -55,4 +55,6 @@ topic: Topic;
 @ManyToMany(() => Document, (document) => document.sharedWithTasks)
 @JoinTable()
 sharedDocuments: Document[];
+@Column({ type: 'int', nullable: true })
+score?: number;
 }

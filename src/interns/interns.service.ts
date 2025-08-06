@@ -6,7 +6,7 @@ import { UpdateInternDto } from './dto/UpdateInternDTO';
 import { TaskStatus } from '../tasks/entities/task.entity';
 import { ForbiddenException } from '@nestjs/common/exceptions/forbidden.exception';
 import { Task } from '../tasks/entities/task.entity';
-import { InternAssignment } from '../admin/entities/user.assign';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as glob from 'glob';
@@ -15,7 +15,7 @@ import { BadRequestException } from '@nestjs/common/exceptions/bad-request.excep
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { TaskStatusLogService } from '../tasks/task-status-log.service';
+import { TaskStatusLogService } from '../tasks/services/task-status-log.service';
 @Injectable()
 export class InternsService {
   constructor(

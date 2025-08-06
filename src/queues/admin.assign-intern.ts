@@ -2,10 +2,10 @@
 import { Worker } from 'bullmq';
 import { connection } from './redis.config';
 import { DataSource } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 import { Intern } from '../users/user.intern';
 import { Mentor } from '../users/user.mentor';
-import { InternAssignment } from '../admin/entities/user.assign';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
 const dataSource = new DataSource({
   type: 'postgres',
   host: 'localhost',

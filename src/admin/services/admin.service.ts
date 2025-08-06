@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Raw } from 'typeorm';
-import { InternAssignment } from './entities/user.assign';
-import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
+import { InternAssignment } from '../entities/user.assign.entity';
+import { CreateAssignmentDto } from '../dto/CreateAssignmentDto';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
-import { assignQueue } from '../queues/user.queue';
-import { Task } from '../tasks/entities/task.entity';
+import { assignQueue } from '../../queues/user.queue';
+import { Task } from '../../tasks/entities/task.entity';
 import { In,Not } from 'typeorm';
 @Injectable()
 export class AdminService {

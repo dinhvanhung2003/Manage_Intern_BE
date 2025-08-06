@@ -3,7 +3,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { taskQueue } from '../../queues/user.queue';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../users/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Controller('seed')
 export class SeedController {

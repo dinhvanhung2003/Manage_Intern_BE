@@ -1,9 +1,9 @@
 // mentors.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InternAssignment } from '../admin/entities/user.assign';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
 import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateTaskDto } from './dto/CreatTaskDto';
 import { Task } from '../tasks/entities/task.entity';
 import { TaskStatus } from '../tasks/entities/task.entity';
@@ -16,7 +16,7 @@ import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { BadRequestException } from '@nestjs/common';
 import { Intern } from '../users/user.intern';
-import { TaskStatusLogService } from '../tasks/task-status-log.service';
+import { TaskStatusLogService } from '../tasks/services/task-status-log.service';
 import {Document} from '../tasks/entities/document.entity'
 import { In } from 'typeorm';
 const STATUS_LABELS: Record<string, string> = {
@@ -44,6 +44,7 @@ export class MentorService {
   ) { }
 
   async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
+    console.log('Fetching interns for mentor:', mentorId);
     const assignments = await this.assignmentRepo.find({
       where: { mentor: { id: mentorId } },
       relations: ['intern'],

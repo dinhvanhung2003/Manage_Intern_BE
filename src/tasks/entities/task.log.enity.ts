@@ -1,7 +1,7 @@
 // src/task-status-log/task-status-log.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { Task } from '../entities/task.entity';
-import { User } from '../../users/user.entity';
+import { Task } from './task.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('task_status_logs')
 export class TaskStatusLog {

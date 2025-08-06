@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Task } from './entities/task.entity';
-import { TaskImage } from './entities/task.image';
-import { BaseSoftDeleteService } from 'src/common/services/base-soft-delete.service';
-
+import { Task } from '@tasks/entities/task.entity';
+import { TaskImage } from '@tasks/entities/task.image.entity';
+import { BaseSoftDeleteService } from '@common/services/base-soft-delete.service';
+import { NotFoundException } from '@nestjs/common';
 @Injectable()
 export class TaskService extends BaseSoftDeleteService<Task> {
   constructor(
@@ -12,6 +12,7 @@ export class TaskService extends BaseSoftDeleteService<Task> {
     repo: Repository<Task>,
     @InjectRepository(TaskImage)
     private readonly imageRepo: Repository<TaskImage>,
+    
   ) {
     super(repo);
   }
@@ -57,7 +58,15 @@ export class TaskService extends BaseSoftDeleteService<Task> {
 
     return await query.getMany();
   }
-
+async gradeTask(id: number, score: number): Promise<Task> {
+  const task = await this.repo.findOneBy({ id });
+  if (!task) {
+    throw new NotFoundException('Task not found');
+  }
+  task.score = score;
+  return this.repo
+  .save(task);
+}
 
 
 

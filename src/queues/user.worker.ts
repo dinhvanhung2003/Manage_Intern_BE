@@ -8,61 +8,90 @@ import { dataSource } from '../configs/data-source';
 dataSource.initialize().then(() => {
   console.log('Worker started and connected to DB');
 
-  new Worker('create-user', async (job) => {
-    try {
-      console.log('Job received:', job.data);
+  new Worker(
+    'create-user',
+    async (job) => {
+      const queryRunner = dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
-      const { name, email, type, mentorId } = job.data;
-      const hashedPassword = await bcrypt.hash('123456', 10);
-      let repo: any;
-      let user: any;
-      let finalEmail = email;
+      try {
+        console.log('Job received:', job.data);
 
-      if (type === 'intern') {
-        repo = dataSource.getRepository(Intern);
+        const { name, email, type, mentorId } = job.data;
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        let repo: any;
+        let user: any;
+        let finalEmail = email;
 
-        //  Nếu email bị trùng thì tạo email mới dạng internX@mail.com
-        let emailExists = await repo.findOne({ where: { email: finalEmail } });
+        if (type === 'intern') {
+          repo = queryRunner.manager.getRepository(Intern);
 
-        if (emailExists) {
-          // Lấy số lớn nhất hiện có
-          const result = await repo
-            .createQueryBuilder('intern')
-            .select("MAX(CAST(SUBSTRING(intern.email from 'intern([0-9]+)') AS INT))", 'maxNum')
-            .getRawOne();
+          // Kiểm tra email trùng
+          let emailExists = await repo.findOne({
+            where: { email: finalEmail },
+          });
 
-          const nextNumber = (result.maxnum || 0) + 1;
-          finalEmail = `intern${nextNumber}@mail.com`;
+          if (emailExists) {
+            // Lấy intern mới nhất và lock row để tránh race condition
+            const latestIntern = await repo
+              .createQueryBuilder('intern')
+              .where("intern.email ~ '^intern[0-9]+@mail\\.com$'")
+              .orderBy(
+                "CAST(SUBSTRING(intern.email from 'intern([0-9]+)') AS INT)",
+                'DESC'
+              )
+              .setLock('pessimistic_write')
+              .getOne();
+
+            let nextNumber = 1000; // Bắt đầu từ 1000 nếu chưa có ai
+            if (latestIntern) {
+              const match = latestIntern.email.match(/intern(\d+)@/);
+              if (match) {
+                const currentNumber = parseInt(match[1], 10);
+                nextNumber = currentNumber + 1;
+              }
+            }
+
+            finalEmail = `intern${nextNumber}@mail.com`;
+          }
+
+          user = repo.create({
+            name,
+            email: finalEmail,
+            password: hashedPassword,
+            type,
+            mentorId: 71,
+          });
+        } else {
+          repo = queryRunner.manager.getRepository(Mentor);
+
+          let emailExists = await repo.findOne({
+            where: { email: finalEmail },
+          });
+          if (emailExists) {
+            finalEmail = `${Date.now()}_${email}`;
+          }
+
+          user = repo.create({
+            name,
+            email: finalEmail,
+            password: hashedPassword,
+            type,
+          });
         }
 
-        user = repo.create({
-          name,
-          email: finalEmail,
-          password: hashedPassword,
-          type,
-          mentorId: mentorId || null,
-        });
-      } else {
-        repo = dataSource.getRepository(Mentor);
-        // Kiểm tra trùng email với mentor
-        let emailExists = await repo.findOne({ where: { email: finalEmail } });
-        if (emailExists) {
-          finalEmail = `${Date.now()}_${email}`; 
-        }
+        await repo.save(user);
+        await queryRunner.commitTransaction();
 
-        user = repo.create({
-          name,
-          email: finalEmail,
-          password: hashedPassword,
-          type,
-        });
+        console.log(`Created ${type} - ${name} (${finalEmail})`);
+      } catch (err) {
+        await queryRunner.rollbackTransaction();
+        console.error('Error in worker:', err);
+      } finally {
+        await queryRunner.release();
       }
-
-      await repo.save(user);
-      console.log(`Created ${type} - ${name} (${finalEmail})`);
-
-    } catch (err) {
-      console.error('Error in worker:', err);
-    }
-  }, { connection });
+    },
+    { connection }
+  );
 });

@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from './user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { NotFoundException } from '@nestjs/common';
 import { userQueue } from '../queues/user.queue';
 @Injectable()

@@ -1,5 +1,5 @@
 import { ChildEntity, Column } from 'typeorm';
-import { User } from './user.entity';
+import { User } from './entities/user.entity';
 import { Notification } from '../notifications/entities/user.notification';
 import { OneToMany } from 'typeorm';
 @ChildEntity('intern')

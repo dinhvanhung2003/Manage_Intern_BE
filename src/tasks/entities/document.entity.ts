@@ -9,10 +9,10 @@ import {
   ManyToMany,
   JoinColumn
 } from 'typeorm';
-import { User } from '../../users/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Topic } from '../entities/topic.entity';
 import { Task } from '../entities/task.entity';
-import { DocumentFile } from './document-file';
+import { DocumentFile } from './document-file.entity';
 import { DocumentType } from './constants/document-type';
 import { DocumentStatus } from './constants/document-status';
 

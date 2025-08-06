@@ -1,7 +1,7 @@
 // src/task-status-log/task-status-log.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TaskStatusLog } from './entities/task.log'
+import { TaskStatusLog } from '@tasks/entities/task.log.enity';
 import { Repository } from 'typeorm';
 const STATUS_LABELS: Record<string, string> = {
   assigned: 'Chưa nhận',

@@ -13,19 +13,19 @@ import {
   Post
 } from '@nestjs/common';
 import { Request } from 'express';
-import { InternsService } from './interns.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UpdateInternDto } from './dto/UpdateInternDTO';
-import { TaskStatus } from '../tasks/entities/task.entity';
+import { InternsService } from '@interns/interns.service';
+import { JwtAuthGuard } from '@auth/jwt-auth.guard';
+import { UpdateInternDto } from '../dto/UpdateInternDTO';
+import { TaskStatus } from '@tasks/entities/task.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { taskImageMulterOptions } from '../configs/multer.config';
+import { taskImageMulterOptions } from '@configs/multer.config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
-import { ReqUser } from '../auth/req-user.decorators';
-import { User } from '../users/user.entity';
+import { ReqUser } from '@auth/req-user.decorators';
+import { User } from '@users/entities/user.entity';
 import { ParseIntPipe } from '@nestjs/common/pipes/parse-int.pipe';
-import { Task } from '../tasks/entities/task.entity';
+import { Task } from '@tasks/entities/task.entity';
 @Controller('interns')
 @UseGuards(JwtAuthGuard)
 export class InternsController {

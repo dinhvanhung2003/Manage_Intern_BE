@@ -1,6 +1,6 @@
 // src/chat/entities/message.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { InternAssignment } from '../../admin/entities/user.assign'
+import { InternAssignment } from '../../admin/entities/user.assign.entity'
 import { ChatGroup } from './chat-group.entity';
 @Entity()
 export class Message {

@@ -3,11 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Topic } from './entities/topic.entity';
 import { CreateTopicDto } from './dtos/CreateTopicDTO';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 import { NotFoundException } from '@nestjs/common';
 import { AssignTasksToTopicDto } from './dtos/AssignTasksToTopicDto';
 import { Task } from './entities/task.entity';
-import { TopicDeadline } from './entities/topic-deadline';
+import { TopicDeadline } from './entities/topic-deadline.entity';
 import { TaskGateway } from '../mentors/task.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TopicGateway } from './topic.gateway';
@@ -199,6 +199,30 @@ async getAllSharedTopics(userId: number): Promise<Topic[]> {
   });
 }
 
+// lấy topic chung cho intern 
+async getAllSharedTopicsForIntern(internId: number): Promise<Topic[]> {
+  const topics = await this.topicRepo.find({
+    where: { assignedTo: IsNull() },
+    relations: ['createdBy', 'tasks', 'tasks.assignedTo'],
+    order: { id: 'DESC' },
+  });
+
+  
+
+  const filtered = topics
+    .map(topic => ({
+      ...topic,
+      tasks: topic.tasks.filter(task => task.assignedTo?.id === internId)
+    }))
+    .filter(topic => topic.tasks.length > 0);
+
+  console.log("Shared topics for intern", internId, ":", filtered);
+
+  return filtered;
+}
+
+
+  
 
 
 }

@@ -1,6 +1,6 @@
 // src/task-status-log/task-status-log.controller.ts
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
-import { TaskStatusLogService } from './task-status-log.service';
+import { TaskStatusLogService } from '@tasks/services/task-status-log.service';
 
 @Controller('task-logs')
 export class TaskStatusLogController {

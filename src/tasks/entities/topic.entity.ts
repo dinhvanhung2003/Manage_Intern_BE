@@ -1,8 +1,8 @@
 // topic.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne,ManyToMany } from 'typeorm';
 import { Task } from '../../tasks/entities/task.entity';
-import { User } from '../../users/user.entity';
-import { TopicDeadline } from './topic-deadline';
+import { User } from '../../users/entities/user.entity';
+import { TopicDeadline } from './topic-deadline.entity';
 import { Document } from '../../tasks/entities/document.entity';
 @Entity()
 export class Topic {

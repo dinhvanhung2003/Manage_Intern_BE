@@ -2,8 +2,8 @@ import { Worker } from 'bullmq';
 import { connection } from './redis.config';
 import { DataSource } from 'typeorm';
 import { Task, TaskStatus } from '../tasks/entities/task.entity';
-import { User } from '../users/user.entity';
-import { InternAssignment } from '../admin/entities/user.assign';
+import { User } from '../users/entities/user.entity';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
 
 const dataSource = new DataSource({
   type: 'postgres',

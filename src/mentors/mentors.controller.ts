@@ -24,6 +24,7 @@ async getMyInterns(
   @Req() req: Request,
   @Query('search') search?: string,
 ) {
+
   const user = req.user as { sub: number };
   return this.mentorService.getInternsOfMentor(user.sub, search);
 }

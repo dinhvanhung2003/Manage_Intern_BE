@@ -4,7 +4,7 @@ import { NotificationsService } from './notifications.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Notification } from './entities/user.notification';
 import { PushSubscription } from './entities/push.subscription';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Notification,PushSubscription,User])],
   controllers: [NotificationsController],

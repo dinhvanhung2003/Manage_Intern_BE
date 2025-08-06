@@ -12,14 +12,14 @@ import {
   ParseIntPipe,
   Patch,
 } from '@nestjs/common';
-import { DocumentsService } from './documents.service';
+import { DocumentsService } from '../services/documents.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { CreateDocumentDto } from './dtos/CreateDocumentDTO';
-import {JwtAuthGuard} from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { ReqUser } from '../auth/req-user.decorators';
-import { User } from '../users/user.entity';
+import { CreateDocumentDto } from '../dtos/CreateDocumentDTO';
+import {JwtAuthGuard} from '../../auth/jwt-auth.guard';
+import { RolesGuard } from '../../auth/roles.guard';
+import { ReqUser } from '../../auth/req-user.decorators';
+import { User } from '../../users/entities/user.entity';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)

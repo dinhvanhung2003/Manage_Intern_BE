@@ -1,12 +1,12 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AdminService } from './admin.service';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateAssignmentDto } from './dto/CreateAssignmentDto';
+import { AdminService } from '../services/admin.service';
+import { Roles } from '../../auth/roles.decorator';
+import { RolesGuard } from '../../auth/roles.guard';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CreateAssignmentDto } from '../dto/CreateAssignmentDto';
 import { Body, Post, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Task } from '../tasks/entities/task.entity';
+import { Task } from '../../tasks/entities/task.entity';
 import { Repository } from 'typeorm';
 import { Query } from '@nestjs/common';
 @Roles('admin')

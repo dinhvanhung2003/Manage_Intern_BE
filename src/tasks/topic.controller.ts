@@ -9,13 +9,14 @@ import { NotFoundException } from '@nestjs/common';
 import { UploadedFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TopicDeadline } from './entities/topic-deadline';
+import { TopicDeadline } from './entities/topic-deadline.entity';
 import { deadlineFileMulterOptions } from '../../uploads/deadline-upload';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { RolesGuard } from '../auth/roles.guard';
 import { ReqUser } from '../auth/req-user.decorators';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
+import {Query} from '@nestjs/common';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('topics')
 export class TopicsController {
@@ -38,6 +39,15 @@ export class TopicsController {
 getAllSharedTopics(@ReqUser() user): Promise<Topic[]> {
   return this.topicsService.getAllSharedTopics(user.sub);
 }
+
+@Get('/shared/interns/:internId')
+getAllSharedTopicsForIntern(
+  @Param('internId', ParseIntPipe) internId: number
+): Promise<Topic[]> {
+  return this.topicsService.getAllSharedTopicsForIntern(internId);
+}
+
+
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Topic> {

@@ -3,11 +3,11 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from '../users/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { Mentor } from '../users/user.mentor';
 import { Intern } from '../users/user.intern';
-import { Admin } from '../users/user.admin';
+import { Admin } from '../users/entities/user.admin.entity';
 import { Response } from 'express';
 
 @Injectable()
@@ -76,7 +76,7 @@ async login(email: string, password: string) {
 
   const accessToken = this.jwtService.sign(
     { ...payload, tokenType: 'access' },
-    { expiresIn: '30m', secret: process.env.JWT_ACCESS_SECRET || 'accessSecret' },
+    { expiresIn: '1d', secret: process.env.JWT_ACCESS_SECRET || 'accessSecret' },
   );
 
   const refreshToken = this.jwtService.sign(

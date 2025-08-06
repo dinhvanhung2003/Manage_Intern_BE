@@ -6,11 +6,12 @@ import {
   Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { taskImageMulterOptions } from '../configs/multer.config';
-import { Task } from '../tasks/entities/task.entity';
-import { BaseSoftDeleteController } from '../common/controllers/base-soft-delete';
-import { TaskService } from './tasks.service';
+import { taskImageMulterOptions } from '../../configs/multer.config';
+import { Task } from '../entities/task.entity';
+import { BaseSoftDeleteController } from '../../common/controllers/base-soft-delete';
+import { TaskService } from '@tasks/services/tasks.service';
 import { Get, Query } from '@nestjs/common';
+import { Patch, Param } from '@nestjs/common';
 @Controller('tasks')
 export class TasksController extends BaseSoftDeleteController<Task> {
   constructor(private readonly taskService: TaskService) {
@@ -39,4 +40,13 @@ export class TasksController extends BaseSoftDeleteController<Task> {
   ): Promise<Task[]> {
     return this.taskService.filterTasks({ school, status, title, mentorId, dueDateFrom, dueDateTo });
   }
+
+@Patch(':id/score')
+async gradeTask(
+  @Param('id') id: number,
+  @Body('score') score: number
+): Promise<Task> {
+  return this.taskService.gradeTask(id, score);
+}
+
 }
