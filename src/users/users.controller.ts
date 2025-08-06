@@ -18,7 +18,7 @@ import { Roles } from '../auth/roles.decorator'
 import { UserRole } from './entities/user.entity'
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { AxiosResponse } from 'axios';
+import { successResponse, errorResponse } from '../common/response';
 Roles('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -34,9 +34,14 @@ export class UsersController {
   seedUsers() {
     return this.usersService.seedUsers();
   }
-  @Get()
-  getAllUsers(): Promise<User[]> {
-    return this.usersService.findAll();
+   @Get()
+  async getAllUsers() {
+    try {
+      const users = await this.usersService.findAll();
+      return successResponse(users, "Lấy danh sách người dùng thành công!");
+    } catch (err) {
+      return errorResponse(err.message || err, "Lấy danh sách người dùng thất bại!");
+    }
   }
   // @Get('/interns')
   // @Roles("mentor", "admin")

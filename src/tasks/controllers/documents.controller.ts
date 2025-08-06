@@ -20,6 +20,7 @@ import {JwtAuthGuard} from '../../auth/jwt-auth.guard';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ReqUser } from '../../auth/req-user.decorators';
 import { User } from '../../users/entities/user.entity';
+import { successResponse, errorResponse } from '../../common/response';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
