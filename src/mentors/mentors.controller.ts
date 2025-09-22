@@ -13,21 +13,45 @@ import { HttpCode } from '@nestjs/common';
 import { UseInterceptors } from '@nestjs/common';
 import { TaskStatus } from '../tasks/entities/task.entity';
 import { UpdateTaskStatusDto } from '../tasks/dtos/UpdateTaskStatusDTO';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { InternAssignment } from '../admin/entities/user.assign.entity';
+import { Topic } from '../tasks/entities/topic.entity';
+import { Task } from '../tasks/entities/task.entity';
+import {ParseIntPipe} from '@nestjs/common';
+import { TopicsService } from '../tasks/topic.service';
+import { ReqUser } from '../auth/req-user.decorators';
 @UseGuards(JwtAuthGuard)
 @Controller('mentor')
 export class MentorController {
   constructor(private readonly mentorService: MentorService,
-    private readonly notificationsService: NotificationsService) { }
+    private readonly notificationsService: NotificationsService,
+    @InjectRepository(InternAssignment) private readonly assignmentRepo: Repository<InternAssignment>,
+    @InjectRepository(Topic) private readonly topicRepo: Repository<Topic>
+    ,
+    @InjectRepository(Task) private readonly taskRepo: Repository<Task>
+    ,
+  private readonly topicsService: TopicsService
+  ) { }
     // tim kiem intern
-  @Get('interns')
+  // mentor.controller.ts
+@Get('/interns')
 async getMyInterns(
   @Req() req: Request,
   @Query('search') search?: string,
+  @Query('page') page = '1',
+  @Query('limit') limit = '10',
 ) {
-
   const user = req.user as { sub: number };
-  return this.mentorService.getInternsOfMentor(user.sub, search);
+  return this.mentorService.getInternsOfMentor(
+    user.sub,
+    Number(page),
+    Number(limit),
+    search
+  );
 }
+
+
 @Patch('tasks/:id/status')
 async mentorUpdateTaskStatus(
   @Param('id') id: number,
@@ -88,11 +112,15 @@ async getAllMyTasks(
   );
 }
 // danh sách task để gán cho topic
-@Get('tasks/assigned-no-topic')
-async getAssignedTasksWithoutTopic(@Req() req: Request) {
-  const mentorId = (req.user as any).sub;
-  return this.mentorService.getTasksAssignedWithoutTopic(mentorId);
-}
+ @Get('tasks/assigned-no-topic')
+  listTasksAssignedNoTopic(
+    @ReqUser() user: any,
+    @Query('topicId') topicId?: string
+  ) {
+    const id = topicId ? Number(topicId) : undefined;
+    const mentorId = user?.sub; // id mentor từ JWT
+    return this.topicsService.listTasksAssignedNoTopic({ topicId: id, mentorId });
+  }
 
 
   @HttpCode(204)
@@ -141,5 +169,111 @@ async getAssignedTasksWithoutTopic(@Req() req: Request) {
     const mentorId = (req.user as any).sub;
     return this.mentorService.assignTaskToIntern(taskId, body.internId, mentorId);
   }
+
+
+  // phân tích ở dashboard cho mentor 
+@Get('/dashboard/intern-statistics')
+async getInternStats(
+  @Req() req: Request,
+  @Query('year') year: string,
+  @Query('month') month?: string
+) {
+  const mentorId = (req.user as any).sub;
+
+  const qb = this.assignmentRepo
+    .createQueryBuilder('a')
+    .select([
+      month
+        ? `TO_CHAR(a.startDate, 'YYYY-MM-DD') AS date`
+        : `TO_CHAR(a.startDate, 'MM') AS month`,
+    ])
+    .addSelect('COUNT(*)', 'count')
+    .where('a.mentorId = :mentorId', { mentorId })
+    .andWhere('EXTRACT(YEAR FROM a.startDate) = :year', { year: parseInt(year) });
+
+  if (month) {
+    qb.andWhere(`TO_CHAR(a.startDate, 'MM') = :month`, { month });
+    qb.groupBy(`TO_CHAR(a.startDate, 'YYYY-MM-DD')`);
+    qb.orderBy(`TO_CHAR(a.startDate, 'YYYY-MM-DD')`, 'ASC');
+  } else {
+    qb.groupBy(`TO_CHAR(a.startDate, 'MM')`);
+    qb.orderBy(`TO_CHAR(a.startDate, 'MM')`, 'ASC');
+  }
+
+  const result = await qb.getRawMany();
+
+  return result.map(row => (month ? { date: row.date } : { month: row.month })).map((row, idx) => ({
+    ...row,
+    count: parseInt(result[idx].count),
+  }));
+}
+
+
+
+
+
+
+@Get('dashboard/summary')
+async getDashboardSummary(@Req() req: Request) {
+  const user = req.user as { sub: number };
+  return this.mentorService.getDashboardSummary(user.sub);
+}
+@Get('/dashboard/topic-tasks')
+async getTopicTaskStats(@Req() req: Request) {
+  const mentorId = (req.user as any).sub;
+
+  const rows = await this.topicRepo
+    .createQueryBuilder('topic')
+    .leftJoin('topic.tasks', 'task')
+    .leftJoin('topic.createdBy', 'mentor')
+    .select('topic.id', 'id')
+    .addSelect('topic.title', 'name')
+    .addSelect('COUNT(task.id)', 'taskCount')
+    .where('mentor.id = :mentorId', { mentorId })
+    .groupBy('topic.id')
+    .addGroupBy('topic.title')
+    .getRawMany();
+
+  return rows.map(r => ({ id: +r.id, name: r.name, value: +r.taskCount }));
+}
+
+
+// GET /dashboard/topics/:topicId/rank
+// GET /mentor/dashboard/topics/:topicId/rank
+@Get('/dashboard/topics/:topicId/rank')
+async getTopicRank(
+  @Param('topicId', ParseIntPipe) topicId: number,
+  @Req() req: Request,
+) {
+  const mentorId = (req.user as any).sub;
+
+  const rows = await this.taskRepo
+    .createQueryBuilder('task')
+    .leftJoin('task.topic', 'topic')
+    .leftJoin('task.assignedTo', 'intern')       
+    .leftJoin('topic.createdBy', 'mentor')
+    .select('intern.id', 'internId')
+    .addSelect('intern.name', 'internName')
+    .addSelect('task.id', 'taskId')
+    .addSelect('task.score', 'score')
+    .where('topic.id = :topicId', { topicId })
+    .andWhere('mentor.id = :mentorId', { mentorId })
+    .andWhere("intern.type = 'intern'")
+    .orderBy('task.score', 'DESC', 'NULLS LAST')
+    .getRawMany();
+
+  // rank theo thứ tự điểm
+  return rows.map((r, idx) => ({
+    rank: idx + 1,
+    internId: +r.internId,
+    internName: r.internName,
+    taskId: +r.taskId,
+    score: r.score !== null ? +r.score : null,
+  }));
+}
+
+
+
+
 
 }

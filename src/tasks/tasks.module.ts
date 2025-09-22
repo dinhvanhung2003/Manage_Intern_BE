@@ -21,6 +21,7 @@ import { DocumentsController } from './controllers/documents.controller';
 import { DocumentsService } from './services/documents.service';
 import { DocumentFile } from './entities/document-file.entity';
 import { join } from 'path';
+import { MentorController } from 'mentors/mentors.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Task, TaskImage, TaskStatusLog,Topic,User,TopicDeadline,Document,DocumentFile]), 
@@ -31,7 +32,8 @@ import { join } from 'path';
     TasksController,
     TaskStatusLogController, 
     TopicsController,
-    DocumentsController
+    DocumentsController,
+    
   ],
   providers: [
     TaskService,
@@ -40,7 +42,7 @@ import { join } from 'path';
     TopicGateway,
     DocumentsService
   ],
-  exports: [TypeOrmModule,TaskStatusLogService],
+  exports: [TypeOrmModule,TaskStatusLogService,TopicsService],
 
 })
 

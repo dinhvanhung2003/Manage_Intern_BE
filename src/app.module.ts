@@ -39,15 +39,26 @@ import { SeedController } from './common/controllers/seed-task-topic-common.cont
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Hung12122003',
-      database: 'manage_intern',
+      url: process.env.DATABASE_URL,
+      host: process.env.PGHOST,
+            port: Number(process.env.PGPORT ?? 5432),
+            username: process.env.PGUSER,
+            password: process.env.PGPASSWORD,
+            database: process.env.PGDATABASE,
       entities: [User, Mentor, Admin, Intern, InternAssignment, Task, Message,Notification,PushSubscription,TaskImage,TaskStatusLog,ChatGroup,Topic,TopicDeadline
         ,Document,DocumentFile
       ],
       synchronize: true,
+      ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+         autoLoadEntities: true,
+     
+      extra: {
+        // tối ưu kết nối qua internet
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 10000,
+        keepAlive: true,
+        max: 10,
+      },
     }),
 //   RedisModule.forRootAsync({
 //   useFactory: async () => ({

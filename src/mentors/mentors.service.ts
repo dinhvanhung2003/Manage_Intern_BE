@@ -19,6 +19,8 @@ import { Intern } from '../users/user.intern';
 import { TaskStatusLogService } from '../tasks/services/task-status-log.service';
 import {Document} from '../tasks/entities/document.entity'
 import { In } from 'typeorm';
+import { Panigated } from '../types/paginated';
+import { Topic } from '@tasks/entities/topic.entity';
 const STATUS_LABELS: Record<string, string> = {
   assigned: 'Chưa nhận',
   in_progress: 'Đang làm',
@@ -33,7 +35,8 @@ export class MentorService {
     private assignmentRepo: Repository<InternAssignment>,
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
-
+    @InjectRepository(Topic)
+    private readonly topicRepo: Repository<Topic>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly taskGateway: TaskGateway,
@@ -43,30 +46,48 @@ export class MentorService {
     private readonly documentRepo: Repository<Document>,
   ) { }
 
-  async getInternsOfMentor(mentorId: number, search?: string): Promise<Intern[]> {
-    console.log('Fetching interns for mentor:', mentorId);
-    const assignments = await this.assignmentRepo.find({
-      where: { mentor: { id: mentorId } },
-      relations: ['intern'],
-    });
+ // mentor.service.ts
+async getInternsOfMentor(
+  mentorId: number,
+  page = 1,
+  limit = 10,
+  search?: string,
+): Promise<Panigated<Intern>> {
+  const qb = this.assignmentRepo
+    .createQueryBuilder('a')
+    .leftJoinAndSelect('a.intern', 'intern')
+    .where('a.mentorId = :mentorId', { mentorId });
 
-    let interns = assignments.map((a) => a.intern as Intern);
-
-    function removeAccents(str: string): string {
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    }
-
-    if (search) {
-      const keyword = removeAccents(search);
-      interns = interns.filter((intern) =>
-        removeAccents(`${intern.name} ${intern.email} ${intern.school || ''}`).includes(keyword)
-      );
-    }
-
-    return interns;
+  if (search && search.trim()) {
+    const keyword = `%${search.trim()}%`;
+    qb.andWhere(
+      `(intern.name ILIKE :kw OR intern.email ILIKE :kw OR intern.school ILIKE :kw)`,
+      { kw: keyword },
+    );
   }
 
+  // Sắp xếp tùy ý
+  qb.orderBy('intern.name', 'ASC');
 
+  // Phân trang
+  const offset = (page - 1) * limit;
+  qb.skip(offset).take(limit);
+
+  const [assignments, count] = await qb.getManyAndCount();
+
+  // Map ra interns (trường hợp 1 intern có nhiều assignment thì unique theo id)
+  const map = new Map<number, Intern>();
+  for (const a of assignments) {
+    const i = a.intern as Intern;
+    if (!map.has(i.id)) map.set(i.id, i);
+  }
+  const items = Array.from(map.values());
+
+  return { items, total: count, page, limit };
+}
+
+
+  // phân công nhiệm vụ cho intern
   async assignTask(mentorId: number, dto: CreateTaskDto) {
     let intern: User | null = null;
     if (dto.assignedTo) {
@@ -122,6 +143,7 @@ if (dto.documentIds && dto.documentIds.length > 0) {
     return savedTask;
   }
 
+  // lấy danh sách task của 1 intern
   async getTasksOfIntern(mentorId: number, internId: number) {
 
     return this.taskRepo.find({
@@ -132,6 +154,8 @@ if (dto.documentIds && dto.documentIds.length > 0) {
       order: { dueDate: 'ASC' },
     });
   }
+
+  // đánh dấu task đã hoàn thành
   async markCompleted(taskId: number, mentorId: number) {
     const task = await this.taskRepo.findOne({
       where: {
@@ -149,6 +173,8 @@ if (dto.documentIds && dto.documentIds.length > 0) {
     return this.taskRepo.save(task);
   }
   // message queue
+  // fake task
+
   async seedTasks() {
     const assignments = await this.assignmentRepo.find({
       relations: ['intern', 'mentor'], // load đủ intern + mentor
@@ -183,6 +209,7 @@ if (dto.documentIds && dto.documentIds.length > 0) {
     return { message: ` Đã đẩy ${jobs.length} task vào queue từ bảng intern_assignments` };
   }
 
+  // lấy phân công
   async getAssignmentByMentor(mentorId: number) {
     return this.assignmentRepo.findOne({
       where: { mentorId },
@@ -203,7 +230,7 @@ if (dto.documentIds && dto.documentIds.length > 0) {
   }
 
 
-  // Quản lý task 
+  // Quản lý task  của mình
   async getAllTasksCreatedByMentor(
     mentorId: number,
     title?: string,
@@ -287,6 +314,7 @@ async getTasksAssignedWithoutTopic(mentorId: number) {
   //   // }
   //   await this.taskRepo.softRemove(task);
   // }
+  // xóa task
   async deleteTask(taskId: number, mentorId: number) {
     const task = await this.taskRepo.findOne({
       where: {
@@ -453,6 +481,172 @@ async getTasksAssignedWithoutTopic(mentorId: number) {
 
     return this.taskRepo.save(task);
   }
+
+
+
+
+
+
+
+  // phân tích ở dashboard cho mentor
+ // NestJS hoặc tương tự
+async getInternStatistics(
+  mentorId: number,
+  type: string,
+  month?: number,
+  year?: number
+) {
+  const queryBuilder = this.assignmentRepo
+    .createQueryBuilder('assignment')
+    .leftJoin('assignment.intern', 'intern')
+    .where('assignment.mentorId = :mentorId', { mentorId });
+
+  const now = new Date();
+  let start: Date;
+  let end: Date;
+  let groupByMonth = false;
+
+  if (type === 'this_month') {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    start = new Date(year, month, 1);
+    end = new Date(year, month + 1, 0);
+  }
+
+  else if (type === 'last_month') {
+    const isJan = now.getMonth() === 0;
+    const year = isJan ? now.getFullYear() - 1 : now.getFullYear();
+    const month = isJan ? 11 : now.getMonth() - 1;
+    start = new Date(year, month, 1);
+    end = new Date(year, month + 1, 0);
+  }
+
+  else if (type === 'this_year') {
+    const year = now.getFullYear();
+    start = new Date(year, 0, 1);
+    end = new Date(year, 11, 31);
+    groupByMonth = true;
+  }
+
+  else if (type === 'last_year') {
+    const year = now.getFullYear() - 1;
+    start = new Date(year, 0, 1);
+    end = new Date(year, 11, 31);
+    groupByMonth = true;
+  }
+
+  else if (type === '6months') {
+    end = new Date();
+    start = new Date();
+    start.setMonth(end.getMonth() - 5);
+    start.setDate(1);
+    groupByMonth = true;
+  }
+
+  else if (type === 'custom') {
+    if (!month || !year) throw new Error('Missing month or year');
+    start = new Date(year, month - 1, 1);
+    end = new Date(year, month, 0);
+  }
+
+  else {
+    throw new Error('Invalid type');
+  }
+
+  // Apply date filter
+  queryBuilder.andWhere('assignment.startDate BETWEEN :start AND :end', {
+    start,
+    end,
+  });
+
+  const interns = await queryBuilder.getMany();
+
+  if (groupByMonth) {
+    const stats: Record<string, Record<string, number>> = {};
+    const baseYear = start.getFullYear();
+    const endYear = end.getFullYear();
+    const monthsRange = new Set<string>();
+
+    let current = new Date(start);
+    while (current <= end) {
+      const key = `${String(current.getMonth() + 1).padStart(2, '0')}`;
+      stats[key] = { [current.getFullYear()]: 0 };
+      monthsRange.add(`${current.getFullYear()}-${key}`);
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    for (const a of interns) {
+      const date = a.startDate;
+      const m = `${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const y = date.getFullYear();
+      const key = m;
+
+      if (!stats[key]) stats[key] = {};
+      if (!stats[key][y]) stats[key][y] = 0;
+
+      stats[key][y]++;
+    }
+
+    return stats;
+  } else {
+    const key = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const stats: Record<string, Record<string, number>> = {};
+    stats[key] = { [start.getFullYear()]: interns.length };
+    return stats;
+  }
+}
+
+
+
+
+// phân tích tổng quan 
+
+
+async getDashboardSummary(mentorId: number) {
+  const [internCount, taskCount, topicCount, completedTaskCount] = await Promise.all([
+    // Đếm số intern trực tiếp gán mentor
+    this.userRepo.count({
+      where: {
+        type: 'intern',
+        mentorId: mentorId,
+      },
+    }),
+
+    // Đếm số task do mentor tạo topic
+     this.taskRepo.count({
+    where: {
+      assignedBy: { id: mentorId },
+    },
+  }),
+
+    // Đếm số topic
+    this.topicRepo.count({
+      where: { createdBy: { id: mentorId } }, // hoặc `{ createdById: mentorId }`
+    }),
+
+    // Đếm số task đã hoàn thành
+    this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoin('task.topic', 'topic')
+      .where('topic.createdBy = :mentorId', { mentorId })
+      .andWhere('task.status = :status', { status: TaskStatus.COMPLETED })
+      .getCount(),
+  ]);
+
+  const completionRate =
+    taskCount === 0 ? 0 : Math.round((completedTaskCount / taskCount) * 100);
+
+  return {
+    interns: internCount,
+    tasks: taskCount,
+    topics: topicCount,
+    completion: completionRate,
+  };
+}
+
+
+
+
 
 
 }

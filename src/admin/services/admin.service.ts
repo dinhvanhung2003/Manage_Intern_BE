@@ -122,30 +122,7 @@ export class AdminService {
   removeAssignment(id: number) {
     return this.assignmentRepo.delete(id);
   }
-
-
-  // message queue 
-  async enqueueRandomAssignments() {
-    const interns = await this.userRepo.find({ where: { type: 'intern' } });
-    const mentors = await this.userRepo.find({ where: { type: 'mentor' } });
-
-    for (const intern of interns) {
-      const existingAssignment = await this.assignmentRepo.findOne({
-        where: { intern: { id: intern.id } },
-      });
-
-      if (existingAssignment) continue; // Skip nếu intern đã được gán
-
-      const randomMentor = mentors[Math.floor(Math.random() * mentors.length)];
-      await assignQueue.add('assign', {
-        internId: intern.id,
-        mentorId: randomMentor.id,
-      });
-    }
-
-    return { message: `Đã đẩy các job gán vào hàng đợi.` };
-  }
-  async searchAllTasks(keyword?: string, page: number = 1, limit: number = 10) {
+ async searchAllTasks(keyword?: string, page: number = 1, limit: number = 10) {
   const query = this.TaskRepo
     .createQueryBuilder('task')
     .leftJoinAndSelect('task.assignedTo', 'intern')
@@ -174,7 +151,6 @@ export class AdminService {
     nextPage: page * limit >= total ? null : page + 1
   };
 }
-
 // intern chua duoc phan cong 
 async findUnassignedInterns() {
   const assignedInterns = await this.assignmentRepo
@@ -194,6 +170,30 @@ async findUnassignedInterns() {
 
   return unassigned;
 }
+  // message queue 
+  async enqueueRandomAssignments() {
+    const interns = await this.userRepo.find({ where: { type: 'intern' } });
+    const mentors = await this.userRepo.find({ where: { type: 'mentor' } });
+
+    for (const intern of interns) {
+      const existingAssignment = await this.assignmentRepo.findOne({
+        where: { intern: { id: intern.id } },
+      });
+
+      if (existingAssignment) continue; // Skip nếu intern đã được gán
+
+      const randomMentor = mentors[Math.floor(Math.random() * mentors.length)];
+      await assignQueue.add('assign', {
+        internId: intern.id,
+        mentorId: randomMentor.id,
+      });
+    }
+
+    return { message: `Đã đẩy các job gán vào hàng đợi.` };
+  }
+ 
+
+
 
 
 }

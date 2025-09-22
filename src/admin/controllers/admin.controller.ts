@@ -47,11 +47,7 @@ searchAssignments(
     return this.adminService.removeAssignment(id);
   }
 
-  // message queue
-  @Post('assign-random')
-  assignAll() {
-    return this.adminService.enqueueRandomAssignments();
-  }
+  
   // lấy tất cả các task 
   @Get('tasks')
 async getAllTasks(
@@ -68,4 +64,11 @@ async getUnassignedInterns() {
   return this.adminService.findUnassignedInterns();
 }
 
+
+
+// message queue
+  @Post('assign-random')
+  assignAll() {
+    return this.adminService.enqueueRandomAssignments();
+  }
 }

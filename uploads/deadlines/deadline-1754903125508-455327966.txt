@@ -1,0 +1,142 @@
+
+Tất cả lĩnh vực của React, thư viện thường dùng, và các tình huống thực tế phải xử lý
+------------------------------------------------------------------------------------
+
+1) React Core – nền móng bắt buộc
+- JSX & Component: mọi UI là function nhận props và trả JSX.
+- State & Props: state là dữ liệu sống trong component; props là dữ liệu truyền từ cha → con.
+- Render & Reconciliation: state/props đổi → render lại; key giúp React so sánh phần tử trong list.
+- Hooks: quy tắc gọi ở top-level, không gọi trong if/for.
+  + useState, useEffect, useRef
+  + useMemo, useCallback
+  + useTransition, useDeferredValue
+- Controlled vs Uncontrolled
+- Context: chia sẻ state xuyên component.
+
+2) Quản lý state
+- State cục bộ: useState
+- Chia sẻ nhẹ: Context
+- State phức tạp/toàn cục: Zustand, Redux Toolkit, RTK Query, Jotai/Recoil
+- Luồng phức tạp: XState (state machine)
+
+3) Data Fetching & Caching
+- Thư viện: TanStack Query (React Query), RTK Query
+- Khái niệm: queryKey, staleTime, cacheTime, enabled, select
+- Mutation, optimistic update, rollback
+- Hủy request, pagination, infinite scroll, prefetch
+
+4) Forms & Validation
+- Thư viện: react-hook-form, Formik, Zod/Yup
+- Ưu điểm RHF: uncontrolled input, ít re-render
+- Case: Field động, dependent select, debounce validate, autosave
+
+5) Routing & Điều hướng
+- React Router, Next.js
+- Case: Guard theo quyền, đồng bộ filter/sort vào query string, nested layout
+
+6) Styling & Design System
+- Tailwind CSS, CSS Modules, styled-components, Emotion
+- UI libs: shadcn/ui, Chakra UI, Material UI, Ant Design
+- Theming: CSS variables, dark/light, brand tokens
+- A11y: focus ring, focus trap, aria-label
+
+7) Hiệu năng
+- Re-render thừa: React.memo, useMemo, useCallback, selector hẹp
+- Danh sách lớn: react-window, react-virtualized
+- Bundle nặng: code-splitting, dynamic import, lazy third-party
+- UX mượt: useTransition, useDeferredValue
+
+8) SSR/SSG/ISR & Next.js
+- SSR: render HTML server-side
+- SSG: build sẵn HTML
+- ISR: rebuild định kỳ
+- Server/Client Components
+- Lỗi phổ biến: Hydration mismatch
+
+9) TypeScript
+- Type cho props/state, infer từ Zod/Yup
+- Discriminated Union
+- Type router params, API response
+
+10) Testing
+- Vitest/Jest + React Testing Library (component)
+- Cypress/Playwright (E2E)
+- MSW (mock API)
+
+11) Bảo mật Frontend
+- XSS: sanitize nếu cần dangerouslySetInnerHTML
+- Token: httpOnly cookie hoặc LocalStorage (refresh/rotate + TTL ngắn)
+- CORS/CSRF: cấu hình origin, SameSite
+
+12) A11y & i18n
+- A11y: role/label, focus management, keyboard navigation
+- i18n: react-i18next, pluralization, format theo locale, timezone
+
+13) PWA & Offline
+- Service Worker, Workbox
+- IndexedDB để lưu offline
+
+14) Realtime & Collaboration
+- WebSocket, SSE, Firebase, Supabase
+- Presence, typing indicator, CRDT
+
+15) GraphQL
+- Apollo Client, urql, GraphQL Code Generator
+- Normalized cache, pagination, optimistic UI
+
+16) Bảng dữ liệu, biểu đồ, editor
+- TanStack Table, AG Grid, MUI Data Grid
+- Recharts, Chart.js, ECharts, visx
+- TipTap, Slate, Quill
+
+17) File & Ảnh
+- Upload: presigned URL, multipart/chunk, retry, progress
+- Ảnh: nén/resize client, WebP/AVIF, lazy load, CDN
+
+18) Thanh toán & thương mại
+- Stripe, PayPal, Braintree
+- Checkout, 3D Secure, webhook
+
+19) Maps & Geo
+- react-leaflet, @react-google-maps/api, Mapbox GL
+- Cluster markers, route drawing, geofencing
+
+20) Analytics, Logging, Monitoring
+- Sentry, LogRocket, PostHog, GA4
+- Web Vitals
+
+21) Tooling & Kiến trúc repo
+- Vite, PNPM, ESLint, Prettier, Husky
+- Monorepo: Turborepo/Nx
+- Env tách biệt
+
+22) CI/CD & Deploy
+- GitHub Actions/GitLab CI
+- Vercel/Netlify preview per PR
+- Docker khi cần
+
+23) Feature flags & A/B testing
+- LaunchDarkly, Unleash, GrowthBook
+
+24) CMS/Headless & Content
+- Sanity, Contentful, Strapi
+- SSG/ISR + preview
+
+25) Micro-frontend
+- Module Federation, single-spa, Web Components
+
+26) Mobile/Desktop
+- React Native/Expo, Electron/Tauri
+
+---
+10 Trường hợp thực tế tiêu biểu:
+1) Đăng nhập + refresh token
+2) Danh sách lớn + filter + phân trang
+3) Form nhiều bước + autosave
+4) Upload ảnh/video nặng
+5) Optimistic update
+6) Guard theo quyền
+7) Tối ưu render khi search
+8) Hydration mismatch (Next.js)
+9) SEO & chia sẻ mạng xã hội
+10) Giám sát & debug production

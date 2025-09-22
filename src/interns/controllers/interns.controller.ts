@@ -26,6 +26,8 @@ import { ReqUser } from '@auth/req-user.decorators';
 import { User } from '@users/entities/user.entity';
 import { ParseIntPipe } from '@nestjs/common/pipes/parse-int.pipe';
 import { Task } from '@tasks/entities/task.entity';
+import {Query} from '@nestjs/common';
+
 @Controller('interns')
 @UseGuards(JwtAuthGuard)
 export class InternsController {
@@ -63,12 +65,16 @@ export class InternsController {
     }));
   }
 
-  @Get('tasks')
-  async getMyTasks(@Req() req: Request) {
-    const internId = (req.user as any).sub;
-    const search = (req.query.search as string) || '';
-    return this.internsService.findTasksByIntern(internId, search);
-  }
+ @Get('tasks')
+async getMyTasks(@Req() req: Request) {
+  const internId = (req.user as any).sub;
+  const search = (req.query.search as string) || '';
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  return this.internsService.findTasksByIntern(internId, search, page, limit);
+}
+
 
 
   @Patch('tasks/:id/accept')
@@ -125,8 +131,11 @@ export class InternsController {
     );
   }
 
-
-
+  @Get('dashboard/deadlines')  // không có slash đầu
+async deadlines(@Req() req: Request, @Query() range: any) {
+  const user = req.user as { sub: number };
+  return this.internsService.getDeadlinesByIntern(user.sub, range.from, range.to);
+}
 
 
 }

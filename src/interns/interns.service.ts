@@ -16,6 +16,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { TaskStatusLogService } from '../tasks/services/task-status-log.service';
+import { TopicDeadline } from '../tasks/entities/topic-deadline.entity';
+import {Between} from 'typeorm';
+import dayjs from 'dayjs';
 @Injectable()
 export class InternsService {
   constructor(
@@ -25,6 +28,9 @@ export class InternsService {
     private assignmentRepo: Repository<InternAssignment>,
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
+    @InjectRepository(TopicDeadline)
+    private readonly deadlineRepo: Repository<TopicDeadline>,
+
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
       private readonly taskStatusLogService: TaskStatusLogService,
   ) { }
@@ -62,45 +68,56 @@ export class InternsService {
   //   task.status = status;
   //   return this.taskRepo.save(task);
   // }
-  async findTasksByIntern(internId: number, search: string) {
-    const key = `intern:${internId}:search:${search || 'all'}`;
-    const cached = await this.cacheManager.get(key);
+ 
+async findTasksByIntern(internId: number, search: string, page = 1, limit = 10) {
+  const key = `intern:${internId}:search:${search || 'all'}:page:${page}:limit:${limit}`;
+  const cached = await this.cacheManager.get(key);
 
-    if (cached) {
-      console.log(' Cache hit:', key);
-      return cached;
-    }
-    const query = this.taskRepo
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.assignedTo', 'assignedTo')
-      .leftJoinAndSelect('task.assignedBy', 'assignedBy')
-          .leftJoinAndSelect('task.sharedDocuments', 'sharedDocuments')
-    .leftJoinAndSelect('sharedDocuments.files', 'files')
-      .where('assignedTo.id = :internId', { internId });
-
-    if (search) {
-      const lowerSearch = search.toLowerCase();
-      const statusMap: Record<string, string> = {
-        'chưa nhận': 'assigned',
-        'đang làm': 'in_progress',
-        'hoàn thành': 'completed',
-      };
-      const mappedStatus = statusMap[lowerSearch] || null;
-
-      query.andWhere(
-        `(LOWER(task.title) LIKE :search 
-        OR LOWER(task.description) LIKE :search
-        ${mappedStatus ? ' OR task.status = :status' : ''}
-      )`,
-        {
-          search: `%${lowerSearch}%`,
-          ...(mappedStatus ? { status: mappedStatus } : {}),
-        }
-      );
-    }
-
-    return query.orderBy('task.dueDate', 'ASC').getMany();
+  if (cached) {
+    console.log('Cache hit:', key);
+    return cached;
   }
+
+  const query = this.taskRepo
+    .createQueryBuilder('task')
+    .leftJoinAndSelect('task.assignedTo', 'assignedTo')
+    .leftJoinAndSelect('task.assignedBy', 'assignedBy')
+    .leftJoinAndSelect('task.sharedDocuments', 'sharedDocuments')
+    .leftJoinAndSelect('sharedDocuments.files', 'files')
+    .where('assignedTo.id = :internId', { internId });
+
+  if (search) {
+    const lowerSearch = search.toLowerCase();
+    const statusMap: Record<string, string> = {
+      'chưa nhận': 'assigned',
+      'đang làm': 'in_progress',
+      'hoàn thành': 'completed',
+    };
+    const mappedStatus = statusMap[lowerSearch] || null;
+
+    query.andWhere(
+      `(LOWER(task.title) LIKE :search 
+        OR LOWER(task.description) LIKE :search
+        ${mappedStatus ? ' OR task.status = :status' : ''})`,
+      {
+        search: `%${lowerSearch}%`,
+        ...(mappedStatus ? { status: mappedStatus } : {}),
+      }
+    );
+  }
+
+  const [data, total] = await query
+    .orderBy('task.dueDate', 'ASC')
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount();
+
+  const result = { data, total, page, limit };
+  await this.cacheManager.set(key, result, 60); 
+
+  return result;
+}
+
 
 
   // lay thong tin assignment cua intern
@@ -218,6 +235,41 @@ export class InternsService {
   return task;
 }
 
+  // service
+// intern-dashboard.service.ts
+
+// intern-dashboard.service.ts
+async getDeadlinesByIntern(internId: number, from: string, to: string) {
+  // from/to: 'YYYY-MM-DD' → tạo khoảng [from 00:00, to+1d 00:00)
+  const fromStart = new Date(`${from}T00:00:00`); // local
+  const toNextDay = new Date(new Date(`${to}T00:00:00`).getTime() + 24 * 60 * 60 * 1000);
+
+  const qb = this.deadlineRepo
+    .createQueryBuilder('d')                      // TopicDeadline
+    .innerJoinAndSelect('d.topic', 't')          // Topic
+    .leftJoinAndSelect('t.assignedTo', 'topicAss') // Topic.assignedTo (có thể null)
+    .leftJoin('t.tasks', 'task')                 // Task[]
+    .leftJoin('task.assignedTo', 'taskAss')      // Task.assignedTo
+    .where('d.deadline >= :fromStart AND d.deadline < :toNextDay', { fromStart, toNextDay })
+    // topic gán intern HOẶC có task gán intern
+    .andWhere('(topicAss.id = :internId OR taskAss.id = :internId)', { internId })
+    .orderBy('d.deadline', 'ASC')
+    .distinct(true);
+  const items = await qb.getMany();
+
+  return items.map(d => ({
+    id: d.id,
+    date: d.deadline,
+    requirement: d.requirement,
+    topicId: d.topic.id,
+    topicTitle: d.topic.title,
+    submittedAt: d.submittedAt ?? null,
+  }));
+}
+
 
 
 }
+
+
+
